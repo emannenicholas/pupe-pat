@@ -27,3 +27,5 @@ RUN python setup.py install
 ENV HOME /home/eng
 
 WORKDIR /home/eng
+
+USER eng

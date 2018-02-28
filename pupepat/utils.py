@@ -1,6 +1,7 @@
 from astropy.stats import median_absolute_deviation
 import numpy as np
 from astropy.table import Table
+import sep
 
 def estimate_bias_level(hdu):
     """
@@ -10,7 +11,7 @@ def estimate_bias_level(hdu):
     :return: float bias_level
     """
     # 1.48 here goes from median absolute deviation to standard deviation
-    noise = 1.48 * median_absolute_deviation(hdu[0].data)
+    noise = 1.48 * median_absolute_deviation(hdu[0].data - sep.Background(hdu[0].data.astype(np.float)))
     gain = float(hdu[0].header['GAIN'])
     read_noise = float(hdu[0].header['RDNOISE'])
     bias_level = gain * np.median(hdu[0].data) - gain * gain * noise * noise + read_noise * read_noise

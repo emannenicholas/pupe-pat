@@ -51,29 +51,40 @@ def elliptical_annulus(x, y, x0_inner=0.0, y0_inner=0.0, a_inner=1.0, b_inner=1.
 
 
 def fit_defocused_image(filename, plot_basename):
-    logging.info('Extracting sources', extra={'tags':{'filename': os.path.basename(filename)}})
+    logger.info('Extracting sources', extra={'tags':{'filename': os.path.basename(filename)}})
     hdu = fits.open(filename)
     data = float(hdu[0].header['GAIN']) * (hdu[0].data - estimate_bias_level(hdu))
     background = sep.Background(data)
     sources = sep.extract(data - background, 5.0, err=np.sqrt(data), minarea=5000, deblend_cont=1.0, filter_kernel=None)
-    best_fit_models = [fit_cutout(data, source, plot_basename+'_{id}.pdf'.format(id=i))
+    best_fit_models = [fit_cutout(data, source, plot_basename+'_{id}.pdf'.format(id=i), os.path.basename(filename))
                        for i, source in enumerate(sources)]
     return best_fit_models
 
-def fit_cutout(data, source, plot_filename):
-    logger.info('Fitting source at {x}, {y}'.format(x=source['x'], y=source['y']))
+
+def fit_cutout(data, source, plot_filename, image_filename):
+    logger.info('Fitting source at {x}, {y}'.format(x=source['x'], y=source['y']),
+                extra={'tags': {'filename': image_filename}})
     cutout = data[source['ymin']:source['ymax'] + 1, source['xmin']:source['xmax'] + 1]
     x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
 
-    initial_model = elliptical_annulus(x0_inner=cutout.shape[1] / 2.0, y0_inner=cutout.shape[0] / 2.0,
-                                       x0_outer=cutout.shape[1] / 2.0, y0_outer=cutout.shape[0] / 2.0,
-                                       amplitude_inner=np.median(data), amplitude_outer=40000,
-                                       a_inner=50, b_inner=50, a_outer=100, b_outer=100, background=np.median(data))
+    x0 = source['x'] - source['xmin']
+    y0 = source['y'] - source['ymin']
+    r = np.sqrt((x - x0) ** 2.0 + (y - y0) ** 2.0)
+    brightness_guess = np.median(cutout[r < 100])
+    initial_model = elliptical_annulus(x0_inner=x0, y0_inner=y0,
+                                       x0_outer=x0, y0_outer=y0,
+                                       amplitude_inner=np.median(data), amplitude_outer=brightness_guess,
+                                       a_inner=30, b_inner=30, a_outer=100, b_outer=100, background=np.median(data))
 
     fitter = fitting.SimplexLSQFitter()
-    best_fit_model = fitter(initial_model, x, y, cutout, maxiter=20000, acc=1e-6)
+    best_fit_model = fitter(initial_model, x, y, cutout, weights=1.0 / np.abs(cutout), maxiter=20000, acc=1e-6)
     plot_best_fit_ellipse(plot_filename, cutout, best_fit_model)
 
+    logging_tags = {parameter: getattr(best_fit_model, parameter).value for parameter in best_fit_model.param_names}
+    logging_tags['filename'] = image_filename
+    for keyword in ['xmin', 'xmax', 'ymin', 'ymax']:
+        logging_tags[keyword] = float(source[keyword])
+
     logger.info('Best fit parameters for PUPE-PAT model',
-                extra={'tags': {parameter: getattr(best_fit_model, parameter).value for parameter in best_fit_model.param_names}})
+                extra={'tags': logging_tags})
     return best_fit_model

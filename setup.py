@@ -18,4 +18,5 @@ setup(name='pupepat',
       setup_requires=['pytest-runner'],
       install_requires=['numpy', 'astropy', 'lcogt_logging', 'sep', 'matplotlib', 'watchdog', 'scipy'],
       tests_require=['pytest'],
-      entry_points={'console_scripts': ['run_pupepat_listener=pupepat.main:run_watcher']})
+      entry_points={'console_scripts': ['run_pupepat_listener=pupepat.main:run_watcher',
+                                        'run_pupepat=pupepat.main:analyze_directory']})
