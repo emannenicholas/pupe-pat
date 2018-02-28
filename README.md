@@ -4,7 +4,7 @@ pupe-pat
 Pupil Plate Ellipticity (PUPE)- Photometric Analysis Tool (PAT)
 ---------------------------------------------------------------
 
-###Purpose
+### Purpose
 The purpose of this tool is to facilitate processing of pupil plate
 images collected during the collimation of a Telescope.
 The goal of this software tool is to help the user isolate which
@@ -20,7 +20,7 @@ This software should be readily available at 1m sites and should
 process images quickly enough to not burden the team 
 (100 images in 5 minutes).
 
-###Problem
+### Problem
 During collimation engineers use a script to take a number of out
 of focus images at various tips and tilts of the M2 mechanism. 
 The engineer has to quickly view all images and identify the “best”
@@ -34,12 +34,12 @@ For example, the below two images are at two discrete combinations of
 tip and tilt; however, they appear similar in quality. 
 Which one is better?
 
-###Description
+### Description
 The following procedure is a summary of the existing code and does 
 not need to be followed precisely, but is a proposed approach.
-#####Read in Fits
+##### Read in Fits
 The software should be able to read in a set of fits files (anywhere from around 150 to 400 images) taken from the local core machine and process through them.  They will probably be compressed, but I am open to how to best handle compression.
-#####Obtain Sources
+##### Obtain Sources
 Source extraction libraries exist and can be used to identify 
 the sources in the image.  The images are processed in the 
 following manner:
@@ -55,8 +55,7 @@ This is done using Source Extractor, SEP, https://sep.readthedocs.io/en/v1.0.x/
 * FWHM
 * Others
 
-
-###Present Results
+### Present Results
 Once the results have been calculated the optimal pupil plate 
 needs to be identified.  This can be done various ways but one 
 approach which may be helpful is to create: 
@@ -64,17 +63,18 @@ approach which may be helpful is to create:
 * 3D surface plot showing the M2 tip and tilt on the x, y and the location of the outer pupil vs. inner pupil location to see if the circles are concentric
 * 3D surface plot showing the M2 tip and tilt on the x, y and FWHM
 
-####References
+#### References
 A pre-existing tool has been created to expedite the process of 
 photometric analysis.  This tool is very similar to libraries used
 in the pipeline and has been extracted from the pipeline as a stand
 alone script. The script is titled eng-photometry.py and should be
 revision controlled appropriately as the software package develops.
 
-##Appendices
+## Appendices
 
-###Acronyms
+### Acronyms
+
 | Acronym | Description                                |
-| :-----: | :----------------------------------------: |
+|---------|--------------------------------------------|
 | M2      | Secondary Mirror mechanism on 1m telescope |
 | FWHM    | Full width half max                        |

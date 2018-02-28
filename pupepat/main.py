@@ -70,7 +70,7 @@ class Handler(FileSystemEventHandler):
                         filename = temp_filename
                     else:
                         filename = event.src_path
-                        
+
                     plot_basename = os.path.join(self.output_directory, os.path.splitext(os.path.basename(filename))[0])
 
                     best_fit_models = fit_defocused_image(filename, plot_basename)
