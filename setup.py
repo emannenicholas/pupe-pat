@@ -1,0 +1,21 @@
+"""
+pupepat - Pupil Plate Ellipticity (PUPE)- Photometric Analysis Tool (PAT)
+
+Author
+    Curtis McCully (cmccully@lco.global)
+    Brook Taylor
+
+February 2018
+"""
+from setuptools import setup
+
+setup(name='pupepat',
+      author=['Curtis McCully', 'Brook Taylor'],
+      author_email=['cmccully@lco.global', ''],
+      version=0.1,
+      packages=['pupepat'],
+      package_dir={'pupepat': 'pupepat'},
+      setup_requires=['pytest-runner'],
+      install_requires=['numpy', 'astropy', 'lcogt_logging', 'sep', 'matplotlib', 'watchdog', 'scipy'],
+      tests_require=['pytest'],
+      entry_points={'console_scripts': ['run_pupepat_listener=pupepat.main:run_watcher']})
