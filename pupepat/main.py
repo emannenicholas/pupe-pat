@@ -4,6 +4,8 @@ matplotlib.use('Agg')
 import logging
 import logging.config
 from lcogt_logging import LCOGTFormatter
+import traceback
+import sys
 
 logging.captureWarnings(True)
 
@@ -54,7 +56,7 @@ def analyze_directory():
     parser.add_argument('--output-dir', dest='output_dir', required=True, help='Directory to store output files.')
 
     args = parser.parse_args()
-    images_to_analyze = glob(os.path.join(args.input_dir, '*.fits*'))
+    images_to_analyze = glob(os.path.join(args.input_dir, '*x00.fits*'))
     output_table = None
     for image_filename in images_to_analyze:
         output_table = analyze_image(image_filename, output_table, os.path.join(args.output_dir, 'pupe-pat.dat'), args.output_dir)
@@ -76,10 +78,15 @@ def analyze_image(filename, output_table, output_filename, output_directory):
             plot_basename = os.path.join(output_directory, os.path.splitext(os.path.basename(filename))[0])
 
             best_fit_models = fit_defocused_image(filename, plot_basename)
-            output_table = save_results(os.path.basename(filename), best_fit_models, output_table, output_filename)
+            best_fit_models = [best_fit_model for best_fit_model in best_fit_models if best_fit_model is not None]
+            if len(best_fit_models) > 0:
+                output_table = save_results(os.path.basename(filename), best_fit_models, output_table, output_filename)
     except Exception as e:
-        logger.error('Error processing', extra={'tags': {'filename': os.path.basename(os.path.basename(filename)),
-                                                         'error': str(e)}})
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        tb_msg = traceback.format_exception(exc_type, exc_value, exc_tb)
+
+        logger.error('Error processing: {tb_msg}'.format(tb_msg=tb_msg), extra={'tags': {'filename': os.path.basename(os.path.basename(filename)),
+                                                                                'error': str(e)}})
     return output_table
 
 

@@ -2,6 +2,8 @@ from astropy.stats import median_absolute_deviation
 import numpy as np
 from astropy.table import Table
 import sep
+import logging
+logger = logging.getLogger('pupepat')
 
 def estimate_bias_level(hdu):
     """
@@ -41,7 +43,8 @@ def save_results(input_filename: str, best_fit_models: list,
             best_fit_parameters = {param: getattr(best_fit_model, param).value for param in best_fit_model.param_names}
             best_fit_parameters['filename'] = input_filename
             best_fit_parameters['sourceid'] = i
-        output_table.add_row(best_fit_parameters)
+            logger.info(best_fit_parameters)
+            output_table.add_row(best_fit_parameters)
 
     output_table.write(output_filename, format='ascii', overwrite=True)
     return output_table

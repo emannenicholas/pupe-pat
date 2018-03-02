@@ -62,10 +62,21 @@ def fit_defocused_image(filename, plot_basename):
 
 
 def fit_cutout(data, source, plot_filename, image_filename):
-    logger.info('Fitting source at {x}, {y}'.format(x=source['x'], y=source['y']),
-                extra={'tags': {'filename': image_filename}})
+    logger.info('Fitting source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y':source['y']}})
     cutout = data[source['ymin']:source['ymax'] + 1, source['xmin']:source['xmax'] + 1]
     x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
+
+    # Short circuit if either the source is in focus or if we just picked up a couple of hot columns
+    got_bad_columns = (source['xmax'] - source['xmin']) < 100 or (source['ymax'] - source['ymin']) < 100
+    background = np.median(data)
+    in_focus = np.abs(data[int(source['y']), int(source['x'])] - background) > 200.0 * np.sqrt(background)
+    if got_bad_columns or in_focus:
+        if got_bad_columns:
+            error_message = 'Star did not have enough columnns. Likely an artifact'
+        elif in_focus:
+            error_message = 'Star was not a donut.'
+        logger.error(error_message, extra={'tags': {'filename': image_filename, 'x': source['x'], 'y':source['y']}})
+        return
 
     x0 = source['x'] - source['xmin']
     y0 = source['y'] - source['ymin']
