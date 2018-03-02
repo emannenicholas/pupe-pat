@@ -63,7 +63,7 @@ def fit_defocused_image(filename, plot_basename):
 
 def fit_cutout(data, source, plot_filename, image_filename):
     logger.info('Fitting source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y':source['y']}})
-    cutout = data[source['ymin']:source['ymax'] + 1, source['xmin']:source['xmax'] + 1]
+    cutout = data[source['y'] - 150:source['y'] + 151, source['x']- 150:source['x'] + 151]
     x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
 
     # Short circuit if either the source is in focus or if we just picked up a couple of hot columns
