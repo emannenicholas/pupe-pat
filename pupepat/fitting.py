@@ -84,7 +84,7 @@ def fit_cutout(data, source, plot_filename, image_filename):
     brightness_guess = np.median(cutout[r < 100])
     initial_model = elliptical_annulus(x0_inner=x0, y0_inner=y0,
                                        x0_outer=x0, y0_outer=y0,
-                                       amplitude_inner=np.median(data), amplitude_outer=brightness_guess,
+                                       amplitude_inner=0.0, amplitude_outer=brightness_guess,
                                        a_inner=30, b_inner=30, a_outer=100, b_outer=100, background=np.median(data))
 
     fitter = fitting.SimplexLSQFitter()
