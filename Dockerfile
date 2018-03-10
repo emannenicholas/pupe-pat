@@ -3,7 +3,7 @@ MAINTAINER Las Cumbres Observatory <webmaster@lco.global>
 
 RUN conda install -y numpy astropy pytest pytest-runner ipython matplotlib scipy \
         && conda install sep -c openastronomy \
-        && conda install watchdog -c conda-forge \
+        && conda install watchdog emcee corner -c conda-forge \
         && conda clean -y --all
 
 RUN yum -y install epel-release \

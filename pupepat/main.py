@@ -56,7 +56,7 @@ def analyze_directory():
     parser.add_argument('--output-dir', dest='output_dir', required=True, help='Directory to store output files.')
 
     args = parser.parse_args()
-    images_to_analyze = glob(os.path.join(args.input_dir, '*x00.fits*'))
+    images_to_analyze = glob(os.path.join(args.input_dir, '*x??.fits*'))
     output_table = None
     for image_filename in images_to_analyze:
         output_table = analyze_image(image_filename, output_table, os.path.join(args.output_dir, 'pupe-pat.dat'), args.output_dir)
@@ -80,7 +80,7 @@ def analyze_image(filename, output_table, output_filename, output_directory):
             best_fit_models = fit_defocused_image(filename, plot_basename)
             best_fit_models = [best_fit_model for best_fit_model in best_fit_models if best_fit_model is not None]
             if len(best_fit_models) > 0:
-                output_table = save_results(os.path.basename(filename), best_fit_models, output_table, output_filename)
+                output_table = save_results(filename, best_fit_models, output_table, output_filename)
     except Exception as e:
         exc_type, exc_value, exc_tb = sys.exc_info()
         tb_msg = traceback.format_exception(exc_type, exc_value, exc_tb)
