@@ -1,7 +1,6 @@
 import matplotlib
 matplotlib.use('Agg')
 
-import logging
 import logging.config
 from lcogt_logging import LCOGTFormatter
 import traceback
@@ -26,7 +25,7 @@ import argparse
 import os
 
 from pupepat.fitting import fit_defocused_image
-from pupepat.utils import save_results
+from pupepat.utils import save_results, merge_pdfs
 import tempfile
 
 
@@ -45,6 +44,7 @@ def run_watcher():
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
+        merge_pdfs(args.output_dir)
         logger.info('Stopping PUPE-PAT watcher because of keyboard interrupt.')
 
     observer.join()
@@ -60,7 +60,7 @@ def analyze_directory():
     output_table = None
     for image_filename in images_to_analyze:
         output_table = analyze_image(image_filename, output_table, os.path.join(args.output_dir, 'pupe-pat.dat'), args.output_dir)
-
+    merge_pdfs(args.output_dir)
 
 def analyze_image(filename, output_table, output_filename, output_directory):
     try:

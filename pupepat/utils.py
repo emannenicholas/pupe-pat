@@ -5,6 +5,9 @@ from astropy.io import fits
 import os
 import sep
 import logging
+from glob import glob
+from PyPDF2 import PdfFileReader, PdfFileWriter
+
 logger = logging.getLogger('pupepat')
 
 
@@ -50,7 +53,7 @@ def save_results(input_filename: str, best_fit_models: list,
     else:
         for i, best_fit_model in enumerate(best_fit_models):
             best_fit_parameters = {param: getattr(best_fit_model, param).value for param in best_fit_model.param_names}
-            best_fit_parameters['filename'] = input_filename
+            best_fit_parameters['filename'] = os.path.basename(input_filename)
             best_fit_parameters['sourceid'] = i
             for keyword in header_keywords:
                 best_fit_parameters[keyword] = hdu[0].header[keyword]
@@ -59,3 +62,30 @@ def save_results(input_filename: str, best_fit_models: list,
 
     output_table.write(output_filename, format='ascii', overwrite=True)
     return output_table
+
+
+def make_cutout(data, x0, y0, r):
+    return data[int(y0 - r):int(y0 + r + 1), int(x0 - r):int(x0 + r + 1)]
+
+def cutout_coordinates(cutout, x0, y0):
+    x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
+    return np.sqrt((x - x0) ** 2.0 + (y - y0) ** 2.0)
+
+
+def run_sep(data, mask_threshold=None):
+    if mask_threshold is None:
+        mask_threshold = 20.0 * np.sqrt(np.median(data)) + np.median(data)
+    background = sep.Background(np.ascontiguousarray(data), mask=np.ascontiguousarray(data > mask_threshold))
+    return sep.extract(data - background, 20.0, err=np.sqrt(data), minarea=1000, deblend_cont=1.0, filter_kernel=None)
+
+def merge_pdfs(output_directory):
+    pdf_files = glob(os.path.join(output_directory, '*.pdf'))
+    pdf_files.sort()
+    pdf_writer = PdfFileWriter()
+
+    for pdf_file in pdf_files:
+        pdf_writer.appendPagesFromReader(PdfFileReader(pdf_file))
+
+    output_filename = os.path.join(output_directory, 'pupe-pat.pdf')
+    with open(output_filename, 'wb') as output_stream:
+        pdf_writer.write(output_stream)

@@ -18,6 +18,12 @@ RUN mkdir /home/eng \
 RUN pip install lcogt-logging \
         && rm -rf ~/.cache/pip
 
+RUN git clone https://github.com/mstamy2/PyPDF2 /usr/src/pypdf2
+
+WORKDIR /usr/src/pypdf2
+
+RUN python setup.py install
+
 COPY . /pupepat/src/
 
 WORKDIR /pupepat/src

@@ -1,9 +1,9 @@
 from astropy.modeling import custom_model
 import numpy as np
 from astropy.io import fits
-import sep
+
 from pupepat.ellipse import inside_ellipse
-from pupepat.utils import estimate_bias_level
+from pupepat.utils import estimate_bias_level, make_cutout, cutout_coordinates, run_sep
 from pupepat.plot import plot_best_fit_ellipse
 from astropy.modeling import fitting
 import os
@@ -56,22 +56,21 @@ def fit_defocused_image(filename, plot_basename):
     logger.info('Extracting sources', extra={'tags':{'filename': os.path.basename(filename)}})
     hdu = fits.open(filename)
     data = float(hdu[0].header['GAIN']) * (hdu[0].data - estimate_bias_level(hdu))
-    background = sep.Background(data)
-    sources = sep.extract(data - background, 20.0, err=np.sqrt(data), minarea=2500, deblend_cont=1.0, filter_kernel=None)
-    best_fit_models = [fit_cutout(data, source, plot_basename+'_{id}.pdf'.format(id=i), os.path.basename(filename))
+    sources = run_sep(data)
+    best_fit_models = [fit_cutout(data, source, plot_basename+'_{id}.pdf'.format(id=i), os.path.basename(filename),
+                                  hdu[0].header)
                        for i, source in enumerate(sources)]
     return best_fit_models
 
 
-def fit_cutout(data, source, plot_filename, image_filename, fit_circle=True, fit_gradient=False):
+def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=True, fit_gradient=False):
     logger.info('Fitting source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y':source['y']}})
-    cutout = data[int(source['y']) - 150:int(source['y']) + 151, int(source['x'])- 150:int(source['x']) + 151]
-    x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
+
+    background = np.median(data)
 
     # Short circuit if either the source is in focus or if we just picked up a couple of hot columns
     got_bad_columns = (source['xmax'] - source['xmin']) < 200 and (source['ymax'] - source['ymin']) > 400
     got_bad_columns |= (source['xmax'] - source['xmin']) > 400 and (source['ymax'] - source['ymin']) < 200
-    background = np.median(data)
     in_focus = np.abs(data[int(source['y']), int(source['x'])] - background) > 200.0 * np.sqrt(background)
     too_close_to_edge = source['x'] - 150 < 0 or source['y'] - 150 < 0
     too_close_to_edge |= source['x'] + 150 > data.shape[1] or source['y'] + 150 > data.shape[0]
@@ -85,20 +84,40 @@ def fit_cutout(data, source, plot_filename, image_filename, fit_circle=True, fit
         logger.error(error_message, extra={'tags': {'filename': image_filename, 'x': source['x'], 'y':source['y']}})
         return
 
-    x0 = 151.0
-    y0 = 151.0
-    r = np.sqrt((x - x0) ** 2.0 + (y - y0) ** 2.0)
+    cutout = make_cutout(data, source['x'], source['y'], 150)
+    r = cutout_coordinates(cutout, 151, 151)
 
-    inner_brightness_guess = np.median(cutout[r < 10])
-    inside_donut_guess = cutout > 10.0 * np.sqrt(np.median(inner_brightness_guess)) + background
+
+    inner_brightness_guess = np.median(cutout[r < 5])
+    inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + background)
     inner_radius_guess = np.percentile(r[inside_donut_guess].flatten(), 10)
+
+    # Remake the cutout with +- 4 * inner_radius_guess
+    cutout_radius = 4.0 * inner_radius_guess
+    cutout = make_cutout(data, source['x'], source['y'], cutout_radius)
+    x0 = y0 = cutout_radius + 1.0
+    r = cutout_coordinates(cutout, x0, y0)
+
+    # Run sep again and make sure there is only one source in the cutout
+    cutout_sources = run_sep(cutout, mask_threshold=25.0 * np.sqrt(background) + background)
+
+    if len(cutout_sources) > 1:
+        logger.error('Too many sources detected in cutout. Likely source crowding.',
+                     extra={'tags': {'filename': image_filename, 'x': source['x'], 'y':source['y']}})
+        return
+
+    inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + background)
     outer_radius_guess = np.percentile(r[inside_donut_guess].flatten(), 90)
+
     brightness_guess = np.median(cutout[np.logical_and(r < outer_radius_guess, r > inner_radius_guess)])
     inner_brightness_guess = np.median(cutout[r < inner_radius_guess])
+
     initial_model = elliptical_annulus(x0_inner=x0, y0_inner=y0,
                                        x0_outer=x0, y0_outer=y0,
                                        amplitude_inner=inner_brightness_guess, amplitude_outer=brightness_guess,
-                                       a_inner=inner_radius_guess, b_inner=inner_radius_guess, a_outer=100, b_outer=100, background=np.median(data))
+                                       a_inner=inner_radius_guess, b_inner=inner_radius_guess, a_outer=outer_radius_guess,
+                                       b_outer=outer_radius_guess,
+                                       background=np.median(data))
 
     if not fit_gradient:
         initial_model.x_slope.fixed = True
@@ -110,9 +129,10 @@ def fit_cutout(data, source, plot_filename, image_filename, fit_circle=True, fit
         initial_model.b_inner.tied = lambda x: x.a_inner
         initial_model.b_outer.tied = lambda x: x.a_outer
 
+    x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
     fitter = fitting.SimplexLSQFitter()
     best_fit_model = fitter(initial_model, x, y, cutout, weights=1.0 / np.abs(cutout), maxiter=20000, acc=1e-6)
-    plot_best_fit_ellipse(plot_filename, cutout, best_fit_model)
+    plot_best_fit_ellipse(plot_filename, cutout, best_fit_model, header)
 
     logging_tags = {parameter: getattr(best_fit_model, parameter).value for parameter in best_fit_model.param_names}
     logging_tags['filename'] = image_filename
