@@ -89,8 +89,8 @@ def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=T
 
 
     inner_brightness_guess = np.median(cutout[r < 5])
-    inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + background)
-    inner_radius_guess = np.percentile(r[inside_donut_guess].flatten(), 10)
+    inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + inner_brightness_guess)
+    inner_radius_guess = np.percentile(r[inside_donut_guess].flatten(), 5)
 
     # Remake the cutout with +- 4 * inner_radius_guess
     cutout_radius = 4.0 * inner_radius_guess
