@@ -1,6 +1,9 @@
 from matplotlib import pyplot
 from pupepat.ellipse import generate_ellipse
+import numpy as np
 import os
+from pupepat.fitting import SurfaceFitter
+
 
 def plot_best_fit_ellipse(output_filename, data_cutout, best_fit_model, header):
     """
@@ -31,3 +34,28 @@ def plot_best_fit_ellipse(output_filename, data_cutout, best_fit_model, header):
                 'FOCDMD: {focdmd: 0.3f} mm'.format(focdmd=header['FOCDMD']), color='white')
     pyplot.tight_layout()
     pyplot.savefig(output_filename)
+
+
+def plot_quiver(data, focus_surface, output_plot, dpi=200):
+    pyplot.clf()
+    pyplot.grid(True)
+    pyplot.gcf().set_size_inches(11, 10, forward=True)
+    fit_evaluator = SurfaceFitter()
+    X, Y = np.meshgrid(1.1 * np.linspace(min(data['M2ROLL']), max(data['M2ROLL']), 10 * dpi),
+                       1.1 * np.linspace(min(data['M2PITCH']), max(data['M2PITCH']), 10 * dpi))
+    center_offset_surface = fit_evaluator.eval(X, Y, focus_surface[0], 1) ** 2.0
+    center_offset_surface += fit_evaluator.eval(X, Y, focus_surface[1], 1) ** 2.0
+    center_offset_surface **= 0.5
+    pyplot.contourf(X, Y, center_offset_surface, 15)
+    pyplot.quiver(data['M2ROLL'], data['M2PITCH'], data['x0_inner'] - data['x0_outer'],
+                  data['y0_inner'] - data['y0_outer'], headlength=3, headaxislength=3.0)
+    best_roll = X[np.argmin(center_offset_surface)]
+    best_pitch = Y[np.argmin(center_offset_surface)]
+    pyplot.scatter(best_roll, best_pitch, marker='X', s=100, c='r', lw=0,
+                   label='ROLL={roll:+d}, PITCH={pitch:+d}'.format(roll=best_pitch, pitch=best_pitch))
+    pyplot.title("Donut Decenter (Inner - Outer)")
+    pyplot.xlabel("M2 Roll tilt (arcsec)")
+    pyplot.ylabel("M2 Pitch tilt (arcsec)")
+    pyplot.legend(loc='upper right', framealpha=0.9)
+    pyplot.tight_layout()
+    pyplot.savefig(output_plot)

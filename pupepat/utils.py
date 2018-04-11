@@ -11,6 +11,9 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 logger = logging.getLogger('pupepat')
 
 
+def offsets(x1, y1, x2, y2):
+    return ((x2 - x1) ** 2.0 + (y2 - y1) ** 2.0) ** 0.5
+
 def estimate_bias_level(hdu):
     """
     Estimate the bias level of image
@@ -42,8 +45,8 @@ def save_results(input_filename: str, best_fit_models: list,
     hdu = fits.open(input_filename)
 
     if output_table is None:
-        param_names = [param for param in best_fit_models[0].param_names]
-        output_table = {param: [getattr(best_fit_model, param).value for best_fit_model in best_fit_models]
+        param_names = [param for param in best_fit_models[0].keys()]
+        output_table = {param: [best_fit_model[param] for best_fit_model in best_fit_models]
                         for param in param_names}
         output_table['filename'] = [os.path.basename(input_filename)] * len(best_fit_models)
         output_table['sourceid'] = range(len(best_fit_models))
@@ -52,13 +55,12 @@ def save_results(input_filename: str, best_fit_models: list,
         output_table = Table(output_table)
     else:
         for i, best_fit_model in enumerate(best_fit_models):
-            best_fit_parameters = {param: getattr(best_fit_model, param).value for param in best_fit_model.param_names}
-            best_fit_parameters['filename'] = os.path.basename(input_filename)
-            best_fit_parameters['sourceid'] = i
+            best_fit_model['filename'] = os.path.basename(input_filename)
+            best_fit_model['sourceid'] = i
             for keyword in header_keywords:
-                best_fit_parameters[keyword] = hdu[0].header[keyword]
-            logger.info(best_fit_parameters)
-            output_table.add_row(best_fit_parameters)
+                best_fit_model[keyword] = hdu[0].header[keyword]
+            logger.info(best_fit_model)
+            output_table.add_row(best_fit_model)
 
     output_table.write(output_filename, format='ascii', overwrite=True)
     return output_table
@@ -78,6 +80,7 @@ def run_sep(data, mask_threshold=None):
     background = sep.Background(np.ascontiguousarray(data), mask=np.ascontiguousarray(data > mask_threshold))
     return sep.extract(data - background, 20.0, err=np.sqrt(data), minarea=1000, deblend_cont=1.0, filter_kernel=None)
 
+
 def merge_pdfs(output_directory):
     pdf_files = glob(os.path.join(output_directory, '*.pdf'))
     pdf_files.sort()
@@ -89,3 +92,26 @@ def merge_pdfs(output_directory):
     output_filename = os.path.join(output_directory, 'pupe-pat.pdf')
     with open(output_filename, 'wb') as output_stream:
         pdf_writer.write(output_stream)
+
+
+def estimate_scatter(a, axis=None):
+    """
+    Caclulate the inter-quartile range of *a* (scaled to normal).
+    :param a: samples for the distribution
+    :param axis: axis to calculate the scatter
+    :return: scatter
+    """
+    lower_quartile, upper_quartile = np.percentile(a, [25, 75], axis=axis)
+    return 0.741301109 * (upper_quartile - lower_quartile)
+
+
+def get_inliers(data, threshold):
+    """
+    Get the indexes of data that are within the threshold of the median
+    :param data: Data to check for inliers
+    :param threshold: n sigma threshold to consider a sample an inlier
+    :return: Boolean array with True for inliers
+    """
+    scatter = estimate_scatter(data)
+    offsets = np.abs(data - np.median(data)) / scatter
+    return  offsets <= threshold

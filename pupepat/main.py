@@ -24,29 +24,32 @@ from glob import glob
 import argparse
 import os
 
+from pupepat.quiver import make_quiver_plot
 from pupepat.fitting import fit_defocused_image
 from pupepat.utils import save_results, merge_pdfs
 import tempfile
-
 
 
 def run_watcher():
     parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory')
     parser.add_argument('--input-dir', dest='input_dir', required=True, help='Input directory where the new files will appear.')
     parser.add_argument('--output-dir', dest='output_dir', required=True, help='Directory to store output files.')
-
+    parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat', help='Filename of the table of fit results.')
+    parser.add_argument('--output-plot', dest='output_plot', default='pupe-pat.pdf',
+                        help='Filename of the quiver plot of fit results.')
     args = parser.parse_args()
     observer = Observer()
-    observer.schedule(Handler(args.output_dir), args.input_dir, recursive=True)
+    observer.schedule(Handler(args.output_dir, args.output_table), args.input_dir, recursive=True)
     observer.start()
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
-        merge_pdfs(args.output_dir)
         logger.info('Stopping PUPE-PAT watcher because of keyboard interrupt.')
 
+    merge_pdfs(args.output_dir)
+    make_quiver_plot(args.output_dir, args.output_table, args.output_plot)
     observer.join()
 
 
@@ -54,13 +57,19 @@ def analyze_directory():
     parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory')
     parser.add_argument('--input-dir', dest='input_dir', required=True, help='Input directory where the new files will appear.')
     parser.add_argument('--output-dir', dest='output_dir', required=True, help='Directory to store output files.')
+    parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat', help='Filename of the table of fit results.')
+    parser.add_argument('--output-plot', dest='output_plot', default='pupe-pat.pdf',
+                        help='Filename of the quiver plot of fit results.')
 
     args = parser.parse_args()
     images_to_analyze = glob(os.path.join(args.input_dir, '*x??.fits*'))
     output_table = None
     for image_filename in images_to_analyze:
-        output_table = analyze_image(image_filename, output_table, os.path.join(args.output_dir, 'pupe-pat.dat'), args.output_dir)
+        output_table = analyze_image(image_filename, output_table, os.path.join(args.output_dir, args.output_table),
+                                     args.output_dir)
     merge_pdfs(args.output_dir)
+    make_quiver_plot(args.output_dir, args.output_table, args.output_plot)
+
 
 def analyze_image(filename, output_table, output_filename, output_directory):
     try:
@@ -91,10 +100,10 @@ def analyze_image(filename, output_table, output_filename, output_directory):
 
 
 class Handler(FileSystemEventHandler):
-    def __init__(self, output_directory):
+    def __init__(self, output_directory, output_filename):
         self.output_directory = output_directory
         self.output_table = None
-        self.output_filename = os.path.join(output_directory, 'pupe-pat.dat')
+        self.output_filename = os.path.join(output_directory, output_filename)
         super(Handler, self).__init__()
 
     def on_created(self, event):
