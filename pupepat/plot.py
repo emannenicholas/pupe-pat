@@ -2,7 +2,7 @@ from matplotlib import pyplot
 from pupepat.ellipse import generate_ellipse
 import numpy as np
 import os
-from pupepat.fitting import SurfaceFitter
+from pupepat.surface import SurfaceFitter
 
 
 def plot_best_fit_ellipse(output_filename, data_cutout, best_fit_model, header):

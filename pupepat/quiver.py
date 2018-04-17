@@ -1,8 +1,9 @@
 import os
-from pupepat.fitting import SurfaceFitter
+from pupepat.surface import SurfaceFitter
 from pupepat.utils import get_inliers, offsets, estimate_scatter
 from pupepat.plot import plot_quiver
 import numpy as np
+from astropy.io import ascii
 
 
 def make_quiver_plot(output_dir, output_table, output_plot):
@@ -14,24 +15,27 @@ def make_quiver_plot(output_dir, output_table, output_plot):
     """
     # Read in the data table
     data = ascii.read(os.path.join(output_dir, output_table))
+    data.sort('FOCDMD')
 
-    # Calculate outliers using plain centroid and center of the circles
-    centroid_inliers = get_inliers(offsets(data['x0_centroid'], data['y0_centroid'], data['x0_outer'], data['y0_outer']), 6.0)
-    data = data[centroid_inliers]
+    for demanded_focus in np.unique(data['FOCDMD']):
 
-    # Calculate outliers using nearby points
-    neighbor_inliers = get_neighbor_inliers(data)
-    data = data[neighbor_inliers]
+        focus_set = data[data['FOCDMD'] == demanded_focus]
+        # Calculate outliers using plain centroid and center of the circles
+        centroid_inliers = get_inliers(offsets(focus_set['x0_centroid'], focus_set['y0_centroid'], focus_set['x0_outer'], focus_set['y0_outer']), 6.0)
+        focus_set = focus_set[centroid_inliers]
 
-    # Fit a smooth surface to inner and outer offsets
-    focus_surface = fit_focus_surface(data)
+        # Calculate outliers using nearby points
+        neighbor_inliers = get_neighbor_inliers(focus_set)
+        focus_set = focus_set[neighbor_inliers]
 
-    # Make the actual plot
-    plot_quiver(data, focus_surface, output_plot)
+        # Fit a smooth surface to inner and outer offsets
+        focus_surface = fit_focus_surface(focus_set)
+
+        # Make the actual plot
+        plot_quiver(focus_set, focus_surface, '{basename}_{focdmd: +d}.pdf'.format(basename=output_plot, focdmd=demanded_focus))
 
 
 def fit_focus_surface(data):
-
     fitter = SurfaceFitter()
     dx_surface = fitter.fit(data['M2ROLL'], data['M2PITCH'], data['x0_outer'] - data['x0_inner'], 1)
     dy_surface = fitter.fit(data['M2ROLL'], data['M2PITCH'], data['y0_outer'] - data['y0_inner'], 1)

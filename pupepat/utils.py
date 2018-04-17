@@ -1,11 +1,10 @@
 from astropy.stats import median_absolute_deviation
 import numpy as np
 from astropy.table import Table
-from astropy.io import fits
+from astropy.io import fits, ascii
 import os
 import sep
 import logging
-from glob import glob
 from PyPDF2 import PdfFileReader, PdfFileWriter
 
 logger = logging.getLogger('pupepat')
@@ -81,17 +80,21 @@ def run_sep(data, mask_threshold=None):
     return sep.extract(data - background, 20.0, err=np.sqrt(data), minarea=1000, deblend_cont=1.0, filter_kernel=None)
 
 
-def merge_pdfs(output_directory):
-    pdf_files = glob(os.path.join(output_directory, '*.pdf'))
-    pdf_files.sort()
-    pdf_writer = PdfFileWriter()
+def merge_pdfs(output_directory, output_table):
+    data = ascii.read(os.path.join(output_directory, output_table))
+    data.sort('FOCDMD', 'M2PITCH', 'M2ROLL')
+    pdf_files = [os.splitext(row['filename'])[0] + '.pdf' for row in data]
+    for demanded_focus in np.unique(data['FOCDMD']):
+        focus_set_indexes = data['FOCDMD'] == demanded_focus
 
-    for pdf_file in pdf_files:
-        pdf_writer.appendPagesFromReader(PdfFileReader(pdf_file))
+        pdf_writer = PdfFileWriter()
 
-    output_filename = os.path.join(output_directory, 'pupe-pat.pdf')
-    with open(output_filename, 'wb') as output_stream:
-        pdf_writer.write(output_stream)
+        for pdf_file in pdf_files[focus_set_indexes]:
+            pdf_writer.appendPagesFromReader(PdfFileReader(pdf_file))
+
+        output_filename = os.path.join(output_directory, 'pupe-pat-{focdmd}.pdf'.format(focdmd=demanded_focus))
+        with open(output_filename, 'wb') as output_stream:
+            pdf_writer.write(output_stream)
 
 
 def estimate_scatter(a, axis=None):
@@ -115,3 +118,8 @@ def get_inliers(data, threshold):
     scatter = estimate_scatter(data)
     offsets = np.abs(data - np.median(data)) / scatter
     return  offsets <= threshold
+
+
+def image_is_defocused(filename):
+    header = fits.getheader(filename)
+    return header['FOCDMD'] != 0.0
