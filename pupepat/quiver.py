@@ -1,12 +1,12 @@
 import os
 from pupepat.surface import SurfaceFitter
-from pupepat.utils import get_inliers, offsets, estimate_scatter
+from pupepat.utils import get_inliers, offsets, estimate_scatter, prettify_focdmd
 from pupepat.plot import plot_quiver
 import numpy as np
 from astropy.io import ascii
 
 
-def make_quiver_plot(output_dir, output_table, output_plot):
+def make_quiver_plot(output_dir, output_table, output_plot='pupe-pat'):
     """
     Make a quiver plot for a full M2 focus grid
     :param output_dir: Output Directory for the plot
@@ -32,7 +32,9 @@ def make_quiver_plot(output_dir, output_table, output_plot):
         focus_surface = fit_focus_surface(focus_set)
 
         # Make the actual plot
-        plot_quiver(focus_set, focus_surface, '{basename}_{focdmd: +d}.pdf'.format(basename=output_plot, focdmd=demanded_focus))
+        output_filename = os.path.join(output_dir, '{basename}-{focdmd}-quiver.pdf'.format(basename=output_plot,
+                                                                                      focdmd=prettify_focdmd(demanded_focus)))
+        plot_quiver(focus_set, focus_surface, output_filename)
 
 
 def fit_focus_surface(data):

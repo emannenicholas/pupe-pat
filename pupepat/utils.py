@@ -80,19 +80,27 @@ def run_sep(data, mask_threshold=None):
     return sep.extract(data - background, 20.0, err=np.sqrt(data), minarea=1000, deblend_cont=1.0, filter_kernel=None)
 
 
-def merge_pdfs(output_directory, output_table):
+def prettify_focdmd(demanded_focus):
+    return '{focdmd:+.0f}'.format(focdmd=demanded_focus).replace('-', 'm').replace('+', 'p')
+
+
+def merge_pdfs(output_directory, output_table, output_pdf='pupe-pat'):
     data = ascii.read(os.path.join(output_directory, output_table))
-    data.sort('FOCDMD', 'M2PITCH', 'M2ROLL')
-    pdf_files = [os.splitext(row['filename'])[0] + '.pdf' for row in data]
+    data.sort(['FOCDMD', 'M2PITCH', 'M2ROLL'])
+    pdf_files = np.array([os.path.join(output_directory,
+                                       '{basename}_{sourceid}.pdf'.format(basename=os.path.splitext(row['filename'])[0],
+                                                                          sourceid=row['sourceid']))
+                          for row in data])
     for demanded_focus in np.unique(data['FOCDMD']):
         focus_set_indexes = data['FOCDMD'] == demanded_focus
 
         pdf_writer = PdfFileWriter()
-
         for pdf_file in pdf_files[focus_set_indexes]:
             pdf_writer.appendPagesFromReader(PdfFileReader(pdf_file))
 
-        output_filename = os.path.join(output_directory, 'pupe-pat-{focdmd}.pdf'.format(focdmd=demanded_focus))
+
+        output_filename = os.path.join(output_directory, '{basename}-{focdmd}-donut.pdf'.format(basename=output_pdf,
+                                                                                                focdmd=prettify_focdmd(demanded_focus)))
         with open(output_filename, 'wb') as output_stream:
             pdf_writer.write(output_stream)
 

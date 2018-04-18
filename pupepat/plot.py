@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot
 from pupepat.ellipse import generate_ellipse
 import numpy as np
@@ -49,13 +51,14 @@ def plot_quiver(data, focus_surface, output_plot, dpi=200):
     pyplot.contourf(X, Y, center_offset_surface, 15)
     pyplot.quiver(data['M2ROLL'], data['M2PITCH'], data['x0_inner'] - data['x0_outer'],
                   data['y0_inner'] - data['y0_outer'], headlength=3, headaxislength=3.0)
-    best_roll = X[np.argmin(center_offset_surface)]
-    best_pitch = Y[np.argmin(center_offset_surface)]
-    pyplot.scatter(best_roll, best_pitch, marker='X', s=100, c='r', lw=0,
-                   label='ROLL={roll:+d}, PITCH={pitch:+d}'.format(roll=best_pitch, pitch=best_pitch))
-    pyplot.title("Donut Decenter (Inner - Outer)")
-    pyplot.xlabel("M2 Roll tilt (arcsec)")
-    pyplot.ylabel("M2 Pitch tilt (arcsec)")
-    pyplot.legend(loc='upper right', framealpha=0.9)
+    best_roll = X.ravel()[np.argmin(center_offset_surface)]
+    best_pitch = Y.ravel()[np.argmin(center_offset_surface)]
+    pyplot.scatter(best_roll, best_pitch, marker='X', s=200, c='r', lw=0,
+                   label='ROLL={roll:+0.0f}, PITCH={pitch:+0.0f}'.format(roll=best_roll, pitch=best_pitch))
+    pyplot.tick_params(axis='both', which='major', labelsize=18)
+    pyplot.title("Donut Decenter (Inner - Outer)", fontsize=22)
+    pyplot.xlabel("M2 Roll tilt (arcsec)", fontsize=20)
+    pyplot.ylabel("M2 Pitch tilt (arcsec)", fontsize=20)
+    pyplot.legend(loc='upper right', framealpha=0.9, fontsize=18)
     pyplot.tight_layout()
     pyplot.savefig(output_plot)

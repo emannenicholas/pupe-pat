@@ -7,11 +7,11 @@ class SurfaceFitter(object):
         """
         Make a list of exponents for the polynomial terms
         :param degree: Maximum of the sum of the x and y powers
-        :return: list of x,y powers to use for the polynomial
+        :return: num_exponents, list of x,y powers to use for the polynomial
         """
         x_powers, y_powers = np.meshgrid(range(degree + 1), range(degree + 1))
         powers_to_use = (x_powers + y_powers <= degree)
-        return zip(x_powers[powers_to_use], y_powers[powers_to_use])
+        return powers_to_use.sum(), zip(x_powers[powers_to_use], y_powers[powers_to_use])
 
     def fit(self, x, y, z, degree):
         """
@@ -22,8 +22,8 @@ class SurfaceFitter(object):
         :param degree: maximum of the sum of x and y powers for the polynomial
         :return: Least squares coefficients (best fit parameters)
         """
-        exponents = self._get_powers(degree)
-        design_matrix = np.zeros((x.size, len(exponents)), dtype=np.float)
+        num_exponents, exponents = self._get_powers(degree)
+        design_matrix = np.zeros((x.size, num_exponents), dtype=np.float)
         for k, (i, j) in enumerate(exponents):
             design_matrix[:, k] = x.flatten() ** i * y.flatten() ** j
         coefficients, _, _, _ = np.linalg.lstsq(design_matrix, z.flatten())
@@ -38,7 +38,7 @@ class SurfaceFitter(object):
         :param degree: maximum of the sum of x and y powers for the polynomial
         :return:
         """
-        exponents = self._get_powers(degree)
+        _, exponents = self._get_powers(degree)
         z = np.zeros(x.shape)
         for a, (i, j) in zip(coefficients, exponents):
             z += a * x ** i * y ** j
