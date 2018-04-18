@@ -86,7 +86,7 @@ def prettify_focdmd(demanded_focus):
 
 def merge_pdfs(output_directory, output_table, output_pdf='pupe-pat'):
     data = ascii.read(os.path.join(output_directory, output_table))
-    data.sort(['FOCDMD', 'M2PITCH', 'M2ROLL'])
+    data.sort(['FOCDMD', 'filename'])
     pdf_files = np.array([os.path.join(output_directory,
                                        '{basename}_{sourceid}.pdf'.format(basename=os.path.splitext(row['filename'])[0],
                                                                           sourceid=row['sourceid']))
