@@ -38,9 +38,10 @@ def make_quiver_plot(output_dir, output_table, output_plot='pupe-pat'):
 
 
 def fit_focus_surface(data):
-    fitter = SurfaceFitter()
-    dx_surface = fitter.fit(data['M2ROLL'], data['M2PITCH'], data['x0_outer'] - data['x0_inner'], 1)
-    dy_surface = fitter.fit(data['M2ROLL'], data['M2PITCH'], data['y0_outer'] - data['y0_inner'], 1)
+    # Fit a first degree polynomial in x and y
+    fitter = SurfaceFitter(1)
+    dx_surface = fitter.fit(data['M2ROLL'], data['M2PITCH'], data['x0_outer'] - data['x0_inner'])
+    dy_surface = fitter.fit(data['M2ROLL'], data['M2PITCH'], data['y0_outer'] - data['y0_inner'])
 
     return dx_surface, dy_surface
 
@@ -52,7 +53,8 @@ def get_neighbor_inliers(data, min_m2_offset=2.0, max_m2_offset=150.0, min_neigh
         m2_offset = offsets(data['M2ROLL'], data['M2PITCH'], row['M2ROLL'], row['M2PITCH'])
         is_neighbor = np.logical_and(m2_offset >= min_m2_offset, m2_offset <= max_m2_offset)
         # Short circuit if there are not enough neighbors
-        if is_neighbor.sum() - 1 < min_neighbors:
+        # Note, this was originally is_neighbor.sum() - 1 (to remove the current data point) < min_neighbors
+        if is_neighbor.sum() <= min_neighbors:
             continue
         center_offsets = offsets(data['x0_inner'], data['y0_inner'], data['x0_outer'], data['y0_outer'])
         neighbor_scatter = estimate_scatter(center_offsets[is_neighbor])

@@ -68,6 +68,7 @@ def save_results(input_filename: str, best_fit_models: list,
 def make_cutout(data, x0, y0, r):
     return data[int(y0 - r):int(y0 + r + 1), int(x0 - r):int(x0 + r + 1)]
 
+
 def cutout_coordinates(cutout, x0, y0):
     x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
     return np.sqrt((x - x0) ** 2.0 + (y - y0) ** 2.0)
@@ -98,9 +99,9 @@ def merge_pdfs(output_directory, output_table, output_pdf='pupe-pat'):
         for pdf_file in pdf_files[focus_set_indexes]:
             pdf_writer.appendPagesFromReader(PdfFileReader(pdf_file))
 
-
-        output_filename = os.path.join(output_directory, '{basename}-{focdmd}-donut.pdf'.format(basename=output_pdf,
-                                                                                                focdmd=prettify_focdmd(demanded_focus)))
+        output_filename = os.path.join(output_directory,
+                                       '{basename}-{focdmd}-donut.pdf'.format(basename=output_pdf,
+                                                                              focdmd=prettify_focdmd(demanded_focus)))
         with open(output_filename, 'wb') as output_stream:
             pdf_writer.write(output_stream)
 
@@ -112,6 +113,8 @@ def estimate_scatter(a, axis=None):
     :param axis: axis to calculate the scatter
     :return: scatter
     """
+    # 2 Φ^−1(0.75)σ ≈ 1.349σ ≈ (27/20)σ for the interquartile range
+    # 0.741301109 = 1.0 / (2**0.5 * special.erfinv(1.5 - 1.0) * 2.0)
     lower_quartile, upper_quartile = np.percentile(a, [25, 75], axis=axis)
     return 0.741301109 * (upper_quartile - lower_quartile)
 

@@ -2,8 +2,8 @@ import numpy as np
 
 
 class SurfaceFitter(object):
-
-    def _get_powers(self, degree):
+    @staticmethod
+    def _get_exponent(self, degree):
         """
         Make a list of exponents for the polynomial terms
         :param degree: Maximum of the sum of the x and y powers
@@ -11,35 +11,35 @@ class SurfaceFitter(object):
         """
         x_powers, y_powers = np.meshgrid(range(degree + 1), range(degree + 1))
         powers_to_use = (x_powers + y_powers <= degree)
-        return powers_to_use.sum(), zip(x_powers[powers_to_use], y_powers[powers_to_use])
+        return zip(x_powers[powers_to_use], y_powers[powers_to_use])
 
-    def fit(self, x, y, z, degree):
+    def __init__(self, degree):
+        """
+        param degree: maximum of the sum of x and y powers for the polynomial
+        """
+        self.exponents = list(self._get_exponent(degree))
+        self.coefficients = None
+
+    def fit(self, x, y, z):
         """
         Fit a surface
         :param x: x coordinate grid for the surface
         :param y: y coordinate grid for the surface
         :param z: 2D surface data
-        :param degree: maximum of the sum of x and y powers for the polynomial
-        :return: Least squares coefficients (best fit parameters)
         """
-        num_exponents, exponents = self._get_powers(degree)
-        design_matrix = np.zeros((x.size, num_exponents), dtype=np.float)
-        for k, (i, j) in enumerate(exponents):
+        design_matrix = np.zeros((x.size, len(self.exponents)), dtype=np.float)
+        for k, (i, j) in enumerate(self.exponents):
             design_matrix[:, k] = x.flatten() ** i * y.flatten() ** j
-        coefficients, _, _, _ = np.linalg.lstsq(design_matrix, z.flatten())
-        return coefficients
+        self.coefficients, _, _, _ = np.linalg.lstsq(design_matrix, z.flatten())
 
-    def eval(self, x, y, coefficients, degree):
+    def eval(self, x, y):
         """
-        Evaluate a surface given coefficients
+        Evaluate a surface given a grid of x and y coordinates
         :param x: x coordinate grid for the surface
         :param y: y coordinate grid for the surface
-        :param coefficients: coefficients of the polynomial
-        :param degree: maximum of the sum of x and y powers for the polynomial
-        :return:
+        :return: Surface evalueted at x, y
         """
-        _, exponents = self._get_powers(degree)
         z = np.zeros(x.shape)
-        for a, (i, j) in zip(coefficients, exponents):
+        for a, (i, j) in zip(self.coefficients, self.exponents):
             z += a * x ** i * y ** j
         return z
