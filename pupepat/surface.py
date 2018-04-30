@@ -2,8 +2,15 @@ import numpy as np
 
 
 class SurfaceFitter(object):
+    def __init__(self, degree):
+        """
+        param degree: maximum of the sum of x and y powers for the polynomial
+        """
+        self.exponents = list(self._get_exponent(degree))
+        self.coefficients = None
+
     @staticmethod
-    def _get_exponent(self, degree):
+    def _get_exponent(degree):
         """
         Make a list of exponents for the polynomial terms
         :param degree: Maximum of the sum of the x and y powers
@@ -12,13 +19,6 @@ class SurfaceFitter(object):
         x_powers, y_powers = np.meshgrid(range(degree + 1), range(degree + 1))
         powers_to_use = (x_powers + y_powers <= degree)
         return zip(x_powers[powers_to_use], y_powers[powers_to_use])
-
-    def __init__(self, degree):
-        """
-        param degree: maximum of the sum of x and y powers for the polynomial
-        """
-        self.exponents = list(self._get_exponent(degree))
-        self.coefficients = None
 
     def fit(self, x, y, z):
         """
