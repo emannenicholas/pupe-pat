@@ -39,11 +39,12 @@ def make_quiver_plot(output_dir, output_table, output_plot='pupe-pat'):
 
 def fit_focus_surface(data):
     # Fit a first degree polynomial in x and y
-    fitter = SurfaceFitter(1)
-    dx_surface = fitter.fit(data['M2ROLL'], data['M2PITCH'], data['x0_outer'] - data['x0_inner'])
-    dy_surface = fitter.fit(data['M2ROLL'], data['M2PITCH'], data['y0_outer'] - data['y0_inner'])
+    dx_fitter = SurfaceFitter(1)
+    dx_fitter.fit(data['M2ROLL'], data['M2PITCH'], data['x0_outer'] - data['x0_inner'])
+    dy_fitter = SurfaceFitter(1)
+    dy_fitter.fit(data['M2ROLL'], data['M2PITCH'], data['y0_outer'] - data['y0_inner'])
 
-    return dx_surface, dy_surface
+    return dx_fitter, dy_fitter
 
 
 def get_neighbor_inliers(data, min_m2_offset=2.0, max_m2_offset=150.0, min_neighbors=10, threshold=6.0):

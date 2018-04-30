@@ -8,11 +8,11 @@ import sys
 
 logging.captureWarnings(True)
 
-logConf = { "formatters": { "default": {"()": LCOGTFormatter}},
-            "handlers": { "console": { "class": "logging.StreamHandler", "formatter": "default",
-                                       "stream": "ext://sys.stdout"}},
-            "loggers": {"pupepat": { "handlers": ["console"], "level": logging.INFO, 'propagate': False}},
-            "version": 1 }
+logConf = {"formatters": {"default": {"()": LCOGTFormatter}},
+           "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "default",
+                                    "stream": "ext://sys.stdout"}},
+           "loggers": {"pupepat": {"handlers": ["console"], "level": logging.INFO, 'propagate': False}},
+           "version": 1}
 
 logging.config.dictConfig(logConf)
 logger = logging.getLogger('pupepat')
@@ -48,8 +48,8 @@ def run_watcher():
         observer.stop()
         logger.info('Stopping PUPE-PAT watcher because of keyboard interrupt.')
 
-    merge_pdfs(args.output_dir)
-    make_quiver_plot(args.output_dir, args.output_table, args.output_plot)
+    merge_pdfs(args.output_dir, args.output_table)
+    make_quiver_plot(args.output_dir, args.output_table, output_plot=args.output_plot)
     observer.join()
 
 
@@ -67,8 +67,8 @@ def analyze_directory():
     for image_filename in images_to_analyze:
         output_table = analyze_image(image_filename, output_table, os.path.join(args.output_dir, args.output_table),
                                      args.output_dir)
-    merge_pdfs(args.output_dir)
-    make_quiver_plot(args.output_dir, args.output_table, args.output_plot)
+    merge_pdfs(args.output_dir, args.output_table)
+    make_quiver_plot(args.output_dir, args.output_table, output_plot=args.output_plot)
 
 
 def analyze_image(filename, output_table, output_filename, output_directory):

@@ -1,4 +1,4 @@
-FROM docker.lcogt.net/miniconda3:4.3.21
+FROM docker.lco.global/docker-miniconda3:4.4.10
 MAINTAINER Las Cumbres Observatory <webmaster@lco.global>
 
 RUN conda install -y numpy astropy pytest pytest-runner ipython matplotlib scipy \

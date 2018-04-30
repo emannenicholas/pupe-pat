@@ -39,15 +39,15 @@ def plot_best_fit_ellipse(output_filename, data_cutout, best_fit_model, header):
     pyplot.savefig(output_filename)
 
 
-def plot_quiver(data, focus_surface_fitter, output_plot, dpi=200):
+def plot_quiver(data, focus_surface, output_plot, dpi=200):
     pyplot.clf()
     pyplot.grid(True)
     pyplot.gcf().set_size_inches(11, 10, forward=True)
     # Make a plotting range a little larger than the M2 pitch and roll grid
     x_grid, y_grid = np.meshgrid(1.1 * np.linspace(min(data['M2ROLL']), max(data['M2ROLL']), 10 * dpi),
                                  1.1 * np.linspace(min(data['M2PITCH']), max(data['M2PITCH']), 10 * dpi))
-    center_offset_surface = focus_surface_fitter.eval(x_grid, y_grid) ** 2.0
-    center_offset_surface += focus_surface_fitter.eval(x_grid, y_grid) ** 2.0
+    center_offset_surface = focus_surface[0].eval(x_grid, y_grid) ** 2.0
+    center_offset_surface += focus_surface[1].eval(x_grid, y_grid) ** 2.0
     center_offset_surface **= 0.5
     pyplot.contourf(x_grid, y_grid, center_offset_surface, 15)
     pyplot.quiver(data['M2ROLL'], data['M2PITCH'], data['x0_inner'] - data['x0_outer'],
