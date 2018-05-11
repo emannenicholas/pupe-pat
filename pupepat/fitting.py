@@ -11,6 +11,7 @@ import emcee
 import corner
 
 import logging
+
 logger = logging.getLogger('pupepat')
 
 
@@ -25,15 +26,15 @@ def elliptical_annulus(x, y, x0_inner=0.0, y0_inner=0.0, a_inner=1.0, b_inner=1.
     :param y: Y positions to evaluate the model
     :param x0_inner: X center of the inner boundary of the annulus
     :param y0_inner: Y center of the inner boundary of the annulus
-    :param a_inner: Semimajor axis length of the inner boundary of the annulus
-    :param b_inner: Semiminor axis length of the inner boundary of the annulus
-    :param theta_inner: The rotation angle of the semimajor axis in radians of the inner boundary of the annulus
+    :param a_inner: Semi-major axis length of the inner boundary of the annulus
+    :param b_inner: Semi-minor axis length of the inner boundary of the annulus
+    :param theta_inner: The rotation angle of the semi-major axis in radians of the inner boundary of the annulus
     :param amplitude_inner: Amplitude of the region inside the inner boundary of the annulus
     :param x0_outer: X center of the outer boundary of the annulus
     :param y0_outer: Y center of the outer boundary of the annulus
-    :param a_outer:  Semimajor axis length of the outer boundary of the annulus
-    :param b_outer:  Semiminor axis length of the outer boundary of the annulus
-    :param theta_outer: The rotation angle of the semimajor axis in radians of the outer boundary of the annulus
+    :param a_outer:  Semi-major axis length of the outer boundary of the annulus
+    :param b_outer:  Semi-minor axis length of the outer boundary of the annulus
+    :param theta_outer: The rotation angle of the semi-major axis in radians of the outer boundary of the annulus
     :param amplitude_outer: Amplitude of the region inside the annulus
     :param x_slope: Slope in the X-direction for the flux in the annulus
     :param y_slope: Slope in the Y-direction for the flux in the annulus
@@ -53,18 +54,18 @@ def elliptical_annulus(x, y, x0_inner=0.0, y0_inner=0.0, a_inner=1.0, b_inner=1.
 
 
 def fit_defocused_image(filename, plot_basename):
-    logger.info('Extracting sources', extra={'tags':{'filename': os.path.basename(filename)}})
+    logger.info('Extracting sources', extra={'tags': {'filename': os.path.basename(filename)}})
     hdu = fits.open(filename)
     data = float(hdu[0].header['GAIN']) * (hdu[0].data - estimate_bias_level(hdu))
     sources = run_sep(data)
-    best_fit_models = [fit_cutout(data, source, plot_basename+'_{id}.pdf'.format(id=i), os.path.basename(filename),
+    best_fit_models = [fit_cutout(data, source, plot_basename + '_{id}.pdf'.format(id=i), os.path.basename(filename),
                                   hdu[0].header)
                        for i, source in enumerate(sources)]
     return best_fit_models
 
 
 def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=True, fit_gradient=False):
-    logger.info('Fitting source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y':source['y']}})
+    logger.info('Fitting source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
 
     background = np.median(data)
 
@@ -81,12 +82,11 @@ def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=T
             error_message = 'Star was not a donut.'
         elif too_close_to_edge:
             error_message = 'Star was too close to the edge of the image.'
-        logger.error(error_message, extra={'tags': {'filename': image_filename, 'x': source['x'], 'y':source['y']}})
+        logger.error(error_message, extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
         return
 
     cutout = make_cutout(data, source['x'], source['y'], 150)
     r = cutout_coordinates(cutout, 151, 151)
-
 
     inner_brightness_guess = np.median(cutout[r < 5])
     inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + inner_brightness_guess)
@@ -103,7 +103,7 @@ def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=T
 
     if len(cutout_sources) > 1:
         logger.error('Too many sources detected in cutout. Likely source crowding.',
-                     extra={'tags': {'filename': image_filename, 'x': source['x'], 'y':source['y']}})
+                     extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
         return
 
     inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + background)
@@ -115,7 +115,8 @@ def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=T
     initial_model = elliptical_annulus(x0_inner=x0, y0_inner=y0,
                                        x0_outer=x0, y0_outer=y0,
                                        amplitude_inner=inner_brightness_guess, amplitude_outer=brightness_guess,
-                                       a_inner=inner_radius_guess, b_inner=inner_radius_guess, a_outer=outer_radius_guess,
+                                       a_inner=inner_radius_guess, b_inner=inner_radius_guess,
+                                       a_outer=outer_radius_guess,
                                        b_outer=outer_radius_guess,
                                        background=np.median(data))
 
@@ -141,19 +142,25 @@ def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=T
 
     logger.info('Best fit parameters for PUPE-PAT model',
                 extra={'tags': logging_tags})
-    return best_fit_model
+
+    fit_results = {param: getattr(best_fit_model, param).value for param in best_fit_model.param_names}
+    fit_results['x0_centroid'], fit_results['y0_centroid'] = x0, y0
+    return fit_results
 
 
 def ln_likelihood_ellipse(theta, x, y, yerr):
     x0_inner, y0_inner, a_inner, b_inner, theta_inner, amplitude_inner, \
-        x0_outer, y0_outer, a_outer, b_outer, theta_outer, amplitude_outer, \
-        x_slope, y_slope, background = theta
-    model = elliptical_annulus(x0_inner=x0_inner, y0_inner=y0_inner, a_inner=a_inner, b_inner=b_inner, theta_inner=theta_inner,
+    x0_outer, y0_outer, a_outer, b_outer, theta_outer, amplitude_outer, \
+    x_slope, y_slope, background = theta
+    model = elliptical_annulus(x0_inner=x0_inner, y0_inner=y0_inner, a_inner=a_inner, b_inner=b_inner,
+                               theta_inner=theta_inner,
                                amplitude_inner=amplitude_inner, x0_outer=x0_outer, y0_outer=y0_outer, a_outer=a_outer,
-                               b_outer=b_outer, theta_outer=theta_outer, amplitude_outer=amplitude_outer, x_slope=x_slope,
+                               b_outer=b_outer, theta_outer=theta_outer, amplitude_outer=amplitude_outer,
+                               x_slope=x_slope,
                                y_slope=y_slope, background=background)
     inv_sigma2 = yerr ** -2.0
     return -0.5 * (np.sum((y - model(x[0], x[1])) ** 2 * inv_sigma2 - np.log(inv_sigma2)))
+
 
 def run_mcmc(x, y, yerr, theta0, likelihood_function, labels, output_plot='pupe-pat-mcmc.pdf', nwalkers=50):
     n_dim = len(theta0)
@@ -164,15 +171,17 @@ def run_mcmc(x, y, yerr, theta0, likelihood_function, labels, output_plot='pupe-
     fig = corner.corner(samples, labels=labels)
     fig.savefig(output_plot)
 
+
 def ln_likelihood_circle(theta, x, y, yerr):
     x0_inner, y0_inner, r_inner, amplitude_inner, \
-        x0_outer, y0_outer, r_outer, amplitude_outer, background = theta
+    x0_outer, y0_outer, r_outer, amplitude_outer, background = theta
     model = elliptical_annulus(x0_inner=x0_inner, y0_inner=y0_inner, a_inner=r_inner, b_inner=r_inner, theta_inner=0.0,
                                amplitude_inner=amplitude_inner, x0_outer=x0_outer, y0_outer=y0_outer, a_outer=r_outer,
                                b_outer=r_outer, theta_outer=0.0, amplitude_outer=amplitude_outer, x_slope=0.0,
                                y_slope=0.0, background=background)
     inv_sigma2 = yerr ** -2.0
     return -0.5 * (np.sum((y - model(x[0], x[1])) ** 2 * inv_sigma2 - np.log(inv_sigma2)))
+
 
 ellipse_labels = ['x0_inner', 'y0_inner', 'a_inner', 'b_inner', 'theta_inner', 'amplitude_inner',
                   'x0_outer', 'y0_outer', 'a_outer', 'b_outer', 'theta_outer', 'amplitude_outer', 'x_slope', 'y_slope',
