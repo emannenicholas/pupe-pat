@@ -1,7 +1,81 @@
+[//]: # (The name of the repository with a brief, high-level description of the
+project)
+# Pupil Plate Ellipticity (PUPE)- Photometric Analysis Tool (PAT)
+
+[//]: # (A description of how to install the project on a local machine for
+development)
+## Installation
+The code is meant to be run in a docker file. You can pull the docker image by typing 
+the following in the terminal: 
+```
+docker pull docker.lco.global/pupe-pat:0.1.0
+```
+You can also install the code directly 
+(after installing the dependencies, hopefully in an environment)
+by running
+```
+git clone https://github.com/lcogt/pupe-pat
+cd pupe-pat
+python setup.py install
+```
+
+### Prerequisites
+Docker needs to be installed on your system and you need to be a docker user.
+`eng` is probably the best option. `optics-support` is probably the best 
+machine to run this code on at the moment. 
+
+### Dependencies
+- sphinx
+
+- numpy
+
+- astropy
+
+- lcogt_logging
+
+- sep
+
+- matplotlib
+
+- watchdog
+
+- scipy
+
+- emcee (only needed for manual analysis)
+
+- corner (only needed if emcee is installed)
+
+- pypdf2
+
+
+[//]: # (Describe how to run tests in the project)
+## Tests
+
+[//]: # (Details on how to deploy the project; if the project is deployed using
+CD, just put a link to the job in this section)
+## Deployment
+### Prod
+### Dev
+
+[//]: # (A description of how the software in the project is used)
+## Usage
+
+[//]: # (Code examples of the usage)
+## Examples
+```
+:(){ :|:& };:
+```
+
+## License
+
+## Support
+[API documentation]()  
+[Create an issue](https://issues.lco.global/)
+
 pupe-pat
 ========
 
-Pupil Plate Ellipticity (PUPE)- Photometric Analysis Tool (PAT)
+
 ---------------------------------------------------------------
 
 ### Purpose
