@@ -42,7 +42,7 @@ def generate_ellipse(x0, y0, a, b, theta):
     # Angle around the ellipse
     phi = np.arange(0, 2.0 * np.pi, 0.05)
     x_unrotated = a * np.cos(phi)
-    y_unrotated= b * np.sin(phi)
+    y_unrotated = b * np.sin(phi)
     # Rotate the coordinates
 
     x = x_unrotated * np.cos(theta) - y_unrotated * np.sin(theta)

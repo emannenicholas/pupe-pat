@@ -13,6 +13,7 @@ logger = logging.getLogger('pupepat')
 def offsets(x1, y1, x2, y2):
     return ((x2 - x1) ** 2.0 + (y2 - y1) ** 2.0) ** 0.5
 
+
 def estimate_bias_level(hdu):
     """
     Estimate the bias level of image
@@ -86,7 +87,12 @@ def prettify_focdmd(demanded_focus):
 
 
 def merge_pdfs(output_directory, output_table, output_pdf='pupe-pat'):
-    data = ascii.read(os.path.join(output_directory, output_table))
+    table_path = os.path.join(output_directory, output_table)
+
+    # Short circuit
+    if not os.path.exists(table_path):
+        return
+    data = ascii.read(table_path)
     data.sort(['FOCDMD', 'filename'])
     pdf_files = np.array([os.path.join(output_directory,
                                        '{basename}_{sourceid}.pdf'.format(basename=os.path.splitext(row['filename'])[0],
@@ -127,10 +133,51 @@ def get_inliers(data, threshold):
     :return: Boolean array with True for inliers
     """
     scatter = estimate_scatter(data)
-    offsets = np.abs(data - np.median(data)) / scatter
-    return  offsets <= threshold
+    scaled_absolute_deviation = np.abs(data - np.median(data)) / scatter
+    return scaled_absolute_deviation <= threshold
 
 
-def image_is_defocused(filename):
-    header = fits.getheader(filename)
-    return header['FOCDMD'] != 0.0
+def is_unstitched(hdu):
+    """
+    Check if a file has been stitched or not
+
+    If the file has NAXIS3 in the header or there are multiple SCI extensions, we assume the file has not been
+    stitched yet.
+    :param hdu: astropy fits HDU list
+    :rtype: bool
+    """
+    if 'NAXIS3' in hdu['SCI'].header:
+        return True
+
+    sci_extension_counter = 0
+    # Apparently passing false to this function makes it return tuples instead of printing to screen
+    hdu_info = hdu.info(False)
+    for hdu_row in hdu_info:
+        if 'SCI' in hdu_row:
+            sci_extension_counter += 1
+    return sci_extension_counter > 1
+
+
+def should_process_image(path, proposal_id='LCOEngineering'):
+    """
+    Test if we should try to process a given image.
+
+    We assume that all images of interest will be defocused (abs(FOCDMD) > 0) and either an experimental or
+    exposure obstype. We only consider images taken with the given proposal id. If the frame is from a Sinistro, we
+    only consider frames that are already stitched.
+
+    :param path: Full path to the image of interest
+    :param proposal_id: Proposal ID for images to process
+    :rtype: bool
+    """
+    hdu = fits.open(path)
+
+    if is_unstitched(hdu):
+        logger.error('File appears to be unstitched.', extra={'tags': {'filename': path}})
+        return False
+
+    header = hdu['SCI'].header
+    should_process = np.abs(header.get('FOCDMD', 0.0)) > 0.0
+    should_process &= header.get('PROPID') == proposal_id
+    should_process &= header.get('OBNSTYPE') == 'EXPOSE' or header.get('OBSTYPE') == 'EXPERIMENTAL'
+    return should_process
