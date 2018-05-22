@@ -164,11 +164,27 @@ the raw data is and where you want the output results to go. The argument on the
 right of the `:` can be anything as long as the `--input-dir` and `output-dir`
 are updated accordingly.
 
-The real-time analysis can be run in almost the same way. 
+The only other parameters are `--output-table` and `--output-plot`. These control the
+names of the output files produced at the end of the analysis. For example, if you 
+wanted to run the analysis a second time but not overwrite the results, you could
+run
 ```
 docker pull docker.lco.global/pupe-pat:{0.1.0}
-docker run --rm -it -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat_watcher --output-dir /output --input-dir /input
+docker run --rm -it -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat --output-dir /output --input-dir /input --output-table pupe-pat-run2.dat --output-plot pupe-pat-run2
 ```
+Note that the `--output-table` flag needs an extension (e.g. `.dat` or `.txt`),
+but the `--output-plot` flag does not. It automatically makes pdf files. This difference
+is because each focus position has a separate plot.
+
+The real-time analysis can be run in the same way (all of the arguments are 
+identical), but using a different command. 
+```
+docker pull docker.lco.global/pupe-pat:{0.1.0}
+docker run --rm -it -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat_listener --output-dir /output --input-dir /input
+```
+Once images are done being taken for the night, press `control-c` to stop the listener
+which will also generate the merged pdfs described above.
+
 
 ### Acronyms
 
