@@ -1,3 +1,16 @@
+"""
+pupepat.surface - Tools to fit a 2-D polynomial to a 2D surface
+
+Author
+    Curtis McCully (cmccully@lco.global)
+    Rob Siverd
+
+License
+    GPL v3.0
+
+February 2018
+"""
+
 import numpy as np
 
 
