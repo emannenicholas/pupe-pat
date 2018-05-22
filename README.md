@@ -4,6 +4,19 @@ project)
 
 [//]: # (A description of how to install the project on a local machine for
 development)
+
+## Purpose
+The purpose of this tool is to facilitate processing pupil plate
+images collected during the collimation of a telescope. A "pupil plate"
+is a defocused star that is defocused so much that it appears as a donut.
+The shape of that donut can be used to characterize (and hopefully eliminate)
+optical distortion.
+
+
+The goal of this software tool is to help the user isolate which
+pupil plate image is the best out of a pre-exposed set of images by
+identifying the best position for the tip and tilt of the M2 mechanism.
+
 ## Installation
 The code is meant to be run in a docker file. You can pull the docker image by typing 
 the following in the terminal: 
@@ -50,69 +63,35 @@ machine to run this code on at the moment.
 
 [//]: # (Describe how to run tests in the project)
 ## Tests
+Currently the tests are run manually. Our test data set was taken on
+kb05 at bpl on 20180409. We use the whole raw directory of images.
+To reduce the test data run the following on the `optics-support` machine
+as the `eng` user:
+```
+docker run --rm -it -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat --output-dir /output --input-dir /input
+```
+Replace `{0.1.0}` with the current version.
+The tests pass if all of the blue circles should align with the donuts
+in the PDF files produced in the output directory.
 
 [//]: # (Details on how to deploy the project; if the project is deployed using
 CD, just put a link to the job in this section)
 ## Deployment
-### Prod
-### Dev
+Currently new versions are built manually. You can run
+```
+docker build -t docker.lco.global/pupe-pat:{0.0.1} .
+docker push docker.lco.global/pupe-pat:{0.0.1}
+```
+replacing `{0.0.1}` with the current version.
 
 [//]: # (A description of how the software in the project is used)
 ## Usage
-
-[//]: # (Code examples of the usage)
-## Examples
-```
-:(){ :|:& };:
-```
-
-## License
-
-## Support
-[API documentation]()  
-[Create an issue](https://issues.lco.global/)
-
-pupe-pat
-========
-
-
----------------------------------------------------------------
-
-### Purpose
-The purpose of this tool is to facilitate processing of pupil plate
-images collected during the collimation of a Telescope.
-The goal of this software tool is to help the user isolate which
-pupil plate image is the best out of a pre-exposed set of images by
-identifying a set of quantitative characteristics processed through
-photometric analysis tools.
-
-At the end of this development the team should have a tool that they
-can use to process many fits file images, quantify the best image to
-move forward with, and visualize how the various tip/tilts of the M2
-mechanism affect various photometric quantities.
-This software should be readily available at 1m sites and should
-process images quickly enough to not burden the team 
-(100 images in 5 minutes).
-
-### Problem
-During collimation engineers use a script to take a number of out
+During collimation, engineers use a script to take a number of out
 of focus images at various tips and tilts of the M2 mechanism. 
-The engineer has to quickly view all images and identify the “best”
-image to move forward in the collimation process.
-The best image is difficult to identify and will vary from person
-to person, therefore, we need a tool that repeatedly calculates
-various quantities that are pre-determined to identify the “best”
-image.
+Previously, the best image was identified by eye.
+This code is meant to quantify this project.
 
-For example, the below two images are at two discrete combinations of
-tip and tilt; however, they appear similar in quality. 
-Which one is better?
 
-### Description
-The following procedure is a summary of the existing code and does 
-not need to be followed precisely, but is a proposed approach.
-##### Read in Fits
-The software should be able to read in a set of fits files (anywhere from around 150 to 400 images) taken from the local core machine and process through them.  They will probably be compressed, but I am open to how to best handle compression.
 ##### Obtain Sources
 Source extraction libraries exist and can be used to identify 
 the sources in the image.  The images are processed in the 
@@ -137,14 +116,12 @@ approach which may be helpful is to create:
 * 3D surface plot showing the M2 tip and tilt on the x, y and the location of the outer pupil vs. inner pupil location to see if the circles are concentric
 * 3D surface plot showing the M2 tip and tilt on the x, y and FWHM
 
-#### References
-A pre-existing tool has been created to expedite the process of 
-photometric analysis.  This tool is very similar to libraries used
-in the pipeline and has been extracted from the pipeline as a stand
-alone script. The script is titled eng-photometry.py and should be
-revision controlled appropriately as the software package develops.
-
-## Appendices
+We currently only support the LCO 1-m class of telescopes.
+[//]: # (Code examples of the usage)
+## Examples
+```
+:(){ :|:& };:
+```
 
 ### Acronyms
 
@@ -152,3 +129,10 @@ revision controlled appropriately as the software package develops.
 |---------|--------------------------------------------|
 | M2      | Secondary Mirror mechanism on 1m telescope |
 | FWHM    | Full width half max                        |
+
+## License
+This code is licensed under GPL v3.0. See License.md for more information.
+## Support
+ [Create an issue](https://issues.lco.global/)
+
+---------------------------------------------------------------
