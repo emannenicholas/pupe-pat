@@ -4,6 +4,8 @@ project)
 
 [//]: # (A description of how to install the project on a local machine for
 development)
+Users can focus on Installation, Usage, and Example sections.
+The other sections are meant for developers.
 
 ## Purpose
 The purpose of this tool is to facilitate processing pupil plate
@@ -20,9 +22,12 @@ identifying the best position for the tip and tilt of the M2 mechanism.
 The code is meant to be run in a docker file. You can pull the docker image by typing 
 the following in the terminal: 
 ```
-docker pull docker.lco.global/pupe-pat:0.1.0
+docker pull docker.lco.global/pupe-pat:{0.1.0}
 ```
-You can also install the code directly 
+replacing {0.1.0} with the current version. You can find the current version 
+checking <https://github.com/lcogt/pupe-pat/releases>.
+
+Alternatively, you can install the code directly 
 (after installing the dependencies, hopefully in an environment)
 by running
 ```
@@ -30,6 +35,7 @@ git clone https://github.com/lcogt/pupe-pat
 cd pupe-pat
 python setup.py install
 ```
+but this setup is not recommended.
 
 ### Prerequisites
 Docker needs to be installed on your system and you need to be a docker user.
@@ -70,8 +76,10 @@ as the `eng` user:
 docker pull docker.lco.global/pupe-pat:{0.1.0}
 docker run --rm -it -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat --output-dir /output --input-dir /input
 ```
-Replace `{0.1.0}` with the current version.
-The tests pass if all of the blue circles should align with the donuts
+replacing {0.1.0} with the current version. You can find the current version 
+checking <https://github.com/lcogt/pupe-pat/releases>.
+
+The tests pass if all of the blue circles align with the donuts
 in the PDF files produced in the output directory.
 
 Eventually this procedure will be replaced with automatic testing in Jenkins.
@@ -81,11 +89,12 @@ CD, just put a link to the job in this section)
 ## Deployment
 Currently new versions are built manually. You can run
 ```
-docker build -t docker.lco.global/pupe-pat:{0.0.1} .
-docker push docker.lco.global/pupe-pat:{0.0.1}
+docker build -t docker.lco.global/pupe-pat:{0.1.0} .
+docker push docker.lco.global/pupe-pat:{0.1.0}
 ```
-replacing `{0.0.1}` with the current version. Eventually we will replace
-this procedure with continuous deployment in Jenkins.
+replacing {0.1.0} with the current version. You can find the current version 
+checking <https://github.com/lcogt/pupe-pat/releases>.
+Eventually we will replace this procedure with continuous deployment in Jenkins.
 
 [//]: # (A description of how the software in the project is used)
 ## Usage
@@ -115,8 +124,8 @@ are long enough to get ~20,000 counts in the images.
 The code automatically detects sources using Source Extractor in Python,
 SEP, https://sep.readthedocs.io/en/v1.0.x. The code then makes a cutout
 around the donut and fits a model using astropy.modeling that has one 
-value in the "hole" of the  donut, one value for the value in the 
-pupil plate and a background level. The centers and radii of the circles 
+value in the "hole" of the  donut, one value for the pupil plate and 
+ one for the background level. The centers and radii of the circles 
 that form the boundaries of the pupil plate are also allowed to vary. 
 There is code in this repo to fit ellipses instead of circles, and to fit
 brightness gradient across the donut, but they are currently disabled.
@@ -153,8 +162,9 @@ The standard offline analysis can be run using the following command.
 docker pull docker.lco.global/pupe-pat:{0.1.0}
 docker run --rm -it -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat --output-dir /output --input-dir /input
 ```
-Again replace `{0.1.0}` with the current version. This gets the most 
-recent version and starts up a docker container
+Again replacing {0.1.0} with the current version. You can find the current version 
+checking <https://github.com/lcogt/pupe-pat/releases>.
+This gets the most recent version and starts up a docker container
 (which is kind of like a virtual machine).
 The `--rm` flag removes the container when it is finished to keep the system
 cleaned up. The `-it` runs the container in interactive mode. This should 
@@ -182,6 +192,7 @@ identical), but using a different command.
 docker pull docker.lco.global/pupe-pat:{0.1.0}
 docker run --rm -it -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat_listener --output-dir /output --input-dir /input
 ```
+This will only work on a machine that /archive mounted, e.g. `optics-support`.
 Once images are done being taken for the night, press `control-c` to stop the listener
 which will also generate the merged pdfs described above.
 
