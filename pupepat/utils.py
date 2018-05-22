@@ -1,3 +1,14 @@
+"""
+pupepat.utils - Utility functions for pupil plate fits
+
+Author
+    Curtis McCully (cmccully@lco.global)
+
+License
+    GPL v3.0
+
+February 2018
+"""
 from astropy.stats import median_absolute_deviation
 import numpy as np
 from astropy.table import Table
@@ -12,6 +23,7 @@ logger = logging.getLogger('pupepat')
 
 def offsets(x1, y1, x2, y2):
     return ((x2 - x1) ** 2.0 + (y2 - y1) ** 2.0) ** 0.5
+
 
 def estimate_bias_level(hdu):
     """

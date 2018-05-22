@@ -1,10 +1,20 @@
+"""
+pupepat.plot - Plotting utils for visualizing the results of the pupil plate fits
+
+Author
+    Curtis McCully (cmccully@lco.global)
+
+License
+    GPL v3.0
+
+February 2018
+"""
 import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot
 from pupepat.ellipse import generate_ellipse
 import numpy as np
 import os
-from pupepat.surface import SurfaceFitter
 
 
 def plot_best_fit_ellipse(output_filename, data_cutout, best_fit_model, header):

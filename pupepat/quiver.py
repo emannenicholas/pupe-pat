@@ -1,3 +1,14 @@
+"""
+pupepat.quiver - Tools to make a quiver plot to visualize the best M2 tip and tilt
+
+Author
+    Curtis McCully (cmccully@lco.global)
+
+License
+    GPL v3.0
+
+February 2018
+"""
 import os
 from pupepat.surface import SurfaceFitter
 from pupepat.utils import get_inliers, offsets, estimate_scatter, prettify_focdmd

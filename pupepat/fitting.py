@@ -1,3 +1,14 @@
+"""
+pupepat.fitting - Tools to fit models to pupil plate images
+
+Author
+    Curtis McCully (cmccully@lco.global)
+
+License
+    GPL v3.0
+
+February 2018
+"""
 from astropy.modeling import custom_model
 import numpy as np
 from astropy.io import fits
