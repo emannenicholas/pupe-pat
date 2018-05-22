@@ -31,7 +31,8 @@ import tempfile
 
 
 def run_watcher():
-    parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory')
+    parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--input-dir', dest='input_dir', required=True, help='Input directory where the new files will appear.')
     parser.add_argument('--output-dir', dest='output_dir', required=True, help='Directory to store output files.')
     parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat', help='Filename of the table of fit results.')
@@ -54,7 +55,8 @@ def run_watcher():
 
 
 def analyze_directory():
-    parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory')
+    parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--input-dir', dest='input_dir', required=True, help='Input directory where the new files will appear.')
     parser.add_argument('--output-dir', dest='output_dir', required=True, help='Directory to store output files.')
     parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat', help='Filename of the table of fit results.')
