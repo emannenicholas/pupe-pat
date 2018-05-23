@@ -1,3 +1,14 @@
+"""
+pupepat.main - console scripts for running pupe-pat
+
+Author
+    Curtis McCully (cmccully@lco.global)
+
+License
+    GPL v3.0
+
+February 2018
+"""
 import matplotlib
 matplotlib.use('Agg')
 

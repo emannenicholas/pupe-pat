@@ -1,3 +1,14 @@
+"""
+pupepat.utils - Utility functions for pupil plate fits
+
+Author
+    Curtis McCully (cmccully@lco.global)
+
+License
+    GPL v3.0
+
+February 2018
+"""
 from astropy.stats import median_absolute_deviation
 import numpy as np
 from astropy.table import Table

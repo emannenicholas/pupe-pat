@@ -1,4 +1,16 @@
+"""
+pupepat.ellipse - Tools for generating ellipses
+
+Author
+    Curtis McCully (cmccully@lco.global)
+
+License
+    GPL v3.0
+
+February 2018
+"""
 import numpy as np
+
 
 def inside_ellipse(x, y, x0, y0, a, b, theta):
     """
