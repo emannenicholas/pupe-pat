@@ -16,7 +16,7 @@ from setuptools import setup
 setup(name='pupepat',
       author=['Curtis McCully', 'Brook Taylor'],
       author_email=['cmccully@lco.global', ''],
-      version='0.0.2',
+      version='0.2.0',
       packages=['pupepat'],
       package_dir={'pupepat': 'pupepat'},
       setup_requires=['pytest-runner'],
