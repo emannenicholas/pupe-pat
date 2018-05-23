@@ -190,5 +190,5 @@ def should_process_image(path, proposal_id='LCOEngineering'):
     header = hdu['SCI'].header
     should_process = np.abs(header.get('FOCDMD', 0.0)) > 0.0
     should_process &= header.get('PROPID') == proposal_id
-    should_process &= header.get('OBNSTYPE') == 'EXPOSE' or header.get('OBSTYPE') == 'EXPERIMENTAL'
+    should_process &= header.get('OBSTYPE') == 'EXPOSE' or header.get('OBSTYPE') == 'EXPERIMENTAL'
     return should_process
