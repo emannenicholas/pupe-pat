@@ -27,7 +27,7 @@ analyzed and the second with the directory to store the output results. Running
 ```
 pupe-pat -h
 ```
-will print help with descriptions of the parameters.
+will print the help message with descriptions of the parameters.
 
 The the most up to date docker image and script are automatically installed 
 on `optics-support` using Puppet.
@@ -37,7 +37,7 @@ To run the real-time analysis, run:
 pupe-pat-realtime /home/eng/input_data_20180501 /home/eng/output_results_20180501
 ```
 The real-time analysis mode should be run on a machine that has 
-/archive mounted, specifically  `optics-support`.
+/archive mounted, specifically `optics-support`.
 Once images are done being taken for the night, press `control-c` to stop
 the listener and generate the merged pdfs described below.
 
@@ -54,11 +54,12 @@ Images to be analyzed should be taken significantly defocused.
 The stars should look like a donut with a hole in center. Currently,
 we require that the inner hole have a radius of at least 5 pixels. 
 The outer edge of the donuts should have a radius of at least 50 pixels
-at the moment. This corresponds roughly to a defocus of +-12 mm for the 
-Sinistro cameras. There are plans underway to shrink this requirement to a 
-25 pixel radius which would allow defocus parameters down to +-6 mm.
-This is currently a requirement in pixels rather than on defocus, so for the
-sbigs in 1x1 binning we can currently get down to +-7.5 mm. 
+at the moment. For the  Sinistro cameras, this corresponds roughly to a 
+defocus of +-12 mm in the focal plane (which is the value stored in FOCDMD 
+in the header). There are plans underway to shrink this 
+requirement to a 25 pixel radius which would allow defocus parameters down 
+to +-6 mm. This is currently a requirement in pixels rather than on defocus,
+so for the SBIGs in 1x1 binning we can currently get down to +-7.5 mm. 
 
 The pupil plate images need to be taken on a bright, isolated star. A cut of 
 V~4 seems to work well. This produces images that are high signal-to-noise
@@ -95,15 +96,18 @@ when taking the images.
 The real-time mode has the same criteria for which images to analyze, but
 watches the input directory for new files. Right before an M2 tip/tilt run,
 this watcher should be started on the directory where the files will appear. 
-For the sbig cameras, this can be the `raw` directory for the given DAY-OBS.
+For the SBIG cameras, this can be the `raw` directory for the given DAY-OBS.
 The Sinistro frames need the amplifiers to be stitched together before they
 can be analyzed, so the watcher should be directed to the `preview` directory
 instead.
 
 [//]: #
 ## Installation
-The code is meant to be run in a docker file. You can pull the docker image 
-by typing the following: 
+The code is currently installed via Puppet. The only machine that has the code
+automatically installed is `optics-support`.
+
+On other machines, he code is meant to be run in a docker file. 
+You can pull the docker image by typing the following: 
 ```
 docker pull docker.lco.global/pupe-pat:{0.1.0}
 ```
@@ -118,8 +122,8 @@ git clone https://github.com/lcogt/pupe-pat
 cd pupe-pat
 python setup.py install
 ```
-but this setup is not recommended. This setup will not include the wrapper
-scripts described above in the Examples section above. For either using a 
+but the docker installation is preferred. This setup will not include the wrapper
+scripts described above in the Examples section above. For using a 
 machine besides `optics-support` or using a direct python installation
 see the Advanced Examples below.
 
@@ -160,11 +164,10 @@ kb05 at bpl on 20180409. We use the whole raw directory of images.
 To reduce the test data run the following on the `optics-support` machine
 as the `eng` user:
 ```
-docker pull docker.lco.global/pupe-pat:{0.1.0}
-docker run --rm -it -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat --output-dir /output --input-dir /input
+pupe-pat /home/eng/pupe-pat-test-data /home/eng/pupe-pat-tests-results
 ```
-replacing {0.1.0} with the current version. You can find the current version 
-checking <https://github.com/lcogt/pupe-pat/releases>.
+You can test other versions using the docker commands
+in the Advanced Examples section below.
 
 The tests pass if all of the blue circles align with the donuts
 in the PDF files produced in the output directory.
@@ -196,7 +199,7 @@ run_pupepat --input-dir /home/eng/input_data_20180501 --output-dir  /home/eng/ou
 ```
 replacing the paths with the desired input and output paths.
 
-The only other availableparameters are `--output-table` and `--output-plot`.
+The other available parameters are `--output-table` and `--output-plot`.
 These control the names of the output files produced at the end of the analysis.
 For example, if you wanted to run the analysis a second time but not overwrite
 the results, you could run
@@ -207,33 +210,29 @@ Note that the `--output-table` flag needs an extension (e.g. `.dat` or `.txt`),
 but the `--output-plot` flag does not. It automatically makes pdf files. 
 This difference is because each focus position produces a separate plot.
 
-The `--rm` flag removes the container when it is finished to keep the system
-cleaned up.  The `-v` maps a directory on the current machine
-+into a directory in the docker container. The path on the left should be wherever
-+the raw data is and where you want the output results to go. The argument on the 
-+right of the `:` can be anything as long as the `--input-dir` and `output-dir`
-+are updated accordingly.
-+
+The real-time analysis has identical arguments, but is run as
+```
+run_pupepat_listener /home/eng/input_data_20180501 --output-dir  /home/eng/output_results_20180501
+```
 
-+
-+The real-time analysis can be run in the same way (all of the arguments are 
-+identical), but using a different command. 
-+```
-+docker pull docker.lco.global/pupe-pat:{0.1.0}
-+docker run --rm -it -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat_listener --output-dir /output --input-dir /input
-+```
-+This will only work on a machine that /archive mounted, e.g. `optics-support`.
-+Once images are done being taken for the night, press `control-c` to stop the listener
-+which will also generate the merged pdfs described above.
+On machines other than `optics-support` the preferred method to run the code
+is via docker. You can do this by running
+```
+docker pull docker.lco.global/pupe-pat:{0.1.0}
+docker run --rm -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat_listener --output-dir /output --input-dir /input
+```
+replacing {0.1.0} with version of interest. You can find the current version 
+by checking <https://github.com/lcogt/pupe-pat/releases>. The mount points inside the container are arbitrary names, needing only to match
+the `--input-dir` and `--output-dir` arguments.
 
-The `-it` runs the container in interactive mode. This should 
-+not be strictly necessary.
-+```
-+docker pull docker.lco.global/pupe-pat:{0.1.0}
-+docker run --rm -it -v /home/eng/pupe-pat-test-data:/input -v /home/eng/pupe-pat-tests-{0.1.0}:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat --output-dir /output --input-dir /input
-+```
-replacing {0.1.0} with the current version. You can find the current version 
-+checking <https://github.com/lcogt/pupe-pat/releases>.
+Running the real-time analysis using docker is similar
+```
+docker pull docker.lco.global/pupe-pat:{0.1.0}
+docker run --rm -it -v /home/eng/input_data_20180501:/input -v /home/eng/pupe-pat/output_results_20180501:/output docker.lco.global/pupe-pat:{0.1.0} run_pupepat_listener --output-dir /output --input-dir /input
+```
+The real-time analysis requires the -it flags so that it will receive the 
+`control-c` command to stop the listener and make the final set of pdfs.
+
 [//]: #
 ## Acronyms
 
@@ -244,7 +243,7 @@ replacing {0.1.0} with the current version. You can find the current version
 
 [//]: #
 ## License
-This code is licensed under GPL v3.0. See License.md for more information.
+This code is licensed under GPL v3.0. See LICENSE for more information.
 
 [//]: #
 ## Support
