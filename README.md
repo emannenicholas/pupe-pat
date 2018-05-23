@@ -199,7 +199,7 @@ run_pupepat --input-dir /home/eng/input_data_20180501 --output-dir  /home/eng/ou
 ```
 replacing the paths with the desired input and output paths.
 
-The other available parameters are `--output-table` and `--output-plot`.
+The other available parameters are `--output-table` and `--output-plot`, and `--proposal-id`.
 These control the names of the output files produced at the end of the analysis.
 For example, if you wanted to run the analysis a second time but not overwrite
 the results, you could run
@@ -209,6 +209,8 @@ run_pupepat /home/eng/input_data_20180501 --output-dir  /home/eng/output_results
 Note that the `--output-table` flag needs an extension (e.g. `.dat` or `.txt`),
 but the `--output-plot` flag does not. It automatically makes pdf files. 
 This difference is because each focus position produces a separate plot.
+The `--proposal-id` flag can be used to set which proposal took the pupil plate images. 
+The default is LCOEngineering.
 
 The real-time analysis has identical arguments, but is run as
 ```

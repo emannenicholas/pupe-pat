@@ -37,7 +37,7 @@ import os
 
 from pupepat.quiver import make_quiver_plot
 from pupepat.fitting import fit_defocused_image
-from pupepat.utils import save_results, merge_pdfs
+from pupepat.utils import save_results, merge_pdfs, should_process_image
 import tempfile
 
 
@@ -49,9 +49,11 @@ def run_watcher():
     parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat', help='Filename of the table of fit results.')
     parser.add_argument('--output-plot', dest='output_plot', default='pupe-pat',
                         help='Filename of the quiver plot of fit results.')
+    parser.add_argument('--proposal-id', dest='proposal_id', default='LCOEngineering',
+                        help='Proposal ID used to take the pupil plate images')
     args = parser.parse_args()
     observer = Observer()
-    observer.schedule(Handler(args.output_dir, args.output_table), args.input_dir, recursive=True)
+    observer.schedule(Handler(args.output_dir, args.output_table, args.proposal_id), args.input_dir, recursive=True)
     observer.start()
     try:
         while True:
@@ -73,9 +75,13 @@ def analyze_directory():
     parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat', help='Filename of the table of fit results.')
     parser.add_argument('--output-plot', dest='output_plot', default='pupe-pat',
                         help='Filename of the quiver plot of fit results.')
+    parser.add_argument('--proposal-id', dest='proposal_id', default='LCOEngineering',
+                        help='Proposal ID used to take the pupil plate images')
 
     args = parser.parse_args()
-    images_to_analyze = glob(os.path.join(args.input_dir, '*x??.fits*'))
+    images_to_analyze = [image for image in glob(os.path.join(args.input_dir, '*fits*'))
+                         if should_process_image(image, args.proposal_id)]
+
     output_table = None
     for image_filename in images_to_analyze:
         output_table = analyze_image(image_filename, output_table, os.path.join(args.output_dir, args.output_table),
@@ -107,18 +113,20 @@ def analyze_image(filename, output_table, output_filename, output_directory):
         exc_type, exc_value, exc_tb = sys.exc_info()
         tb_msg = traceback.format_exception(exc_type, exc_value, exc_tb)
 
-        logger.error('Error processing: {tb_msg}'.format(tb_msg=tb_msg), extra={'tags': {'filename': os.path.basename(os.path.basename(filename)),
-                                                                                'error': str(e)}})
+        logger.error('Error processing: {tb_msg}'.format(tb_msg=tb_msg),
+                     extra={'tags': {'filename': os.path.basename(os.path.basename(filename)), 'error': str(e)}})
     return output_table
 
 
 class Handler(FileSystemEventHandler):
-    def __init__(self, output_directory, output_filename):
+    def __init__(self, output_directory, output_filename, proposal_id):
         self.output_directory = output_directory
         self.output_table = None
         self.output_filename = os.path.join(output_directory, output_filename)
+        self.proposal_id = proposal_id
         super(Handler, self).__init__()
 
     def on_created(self, event):
-        if 'x00.fits.fz' in event.src_path:
-            self.output_table = analyze_image(event.src_path, self.output_table, self.output_filename, self.output_directory)
+        if should_process_image(event.src_path, self.proposal_id):
+            self.output_table = analyze_image(event.src_path, self.output_table,
+                                              self.output_filename, self.output_directory)
