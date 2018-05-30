@@ -69,13 +69,13 @@ def fit_defocused_image(filename, plot_basename):
     hdu = fits.open(filename)
     data = float(hdu[0].header['GAIN']) * (hdu[0].data - estimate_bias_level(hdu))
     sources = run_sep(data)
-    best_fit_models = [fit_cutout(data, source, plot_basename + '_{id}.pdf'.format(id=i), os.path.basename(filename),
-                                  hdu[0].header)
+    best_fit_models = [fit_cutout(data, source, plot_basename, os.path.basename(filename),
+                                  hdu[0].header, i)
                        for i, source in enumerate(sources)]
     return best_fit_models
 
 
-def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=True, fit_gradient=False):
+def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circle=True, fit_gradient=False):
     logger.info('Fitting source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
 
     background = np.median(data)
@@ -88,7 +88,7 @@ def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=T
     too_close_to_edge |= source['x'] + 150 > data.shape[1] or source['y'] + 150 > data.shape[0]
     if got_bad_columns or in_focus or too_close_to_edge:
         if got_bad_columns:
-            error_message = 'Star did not have enough columnns. Likely an artifact'
+            error_message = 'Star did not have enough columns. Likely an artifact'
         elif in_focus:
             error_message = 'Star was not a donut.'
         elif too_close_to_edge:
@@ -144,7 +144,7 @@ def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=T
     x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
     fitter = fitting.SimplexLSQFitter()
     best_fit_model = fitter(initial_model, x, y, cutout, weights=1.0 / np.abs(cutout), maxiter=20000, acc=1e-6)
-    plot_best_fit_ellipse(plot_filename, cutout, best_fit_model, header)
+    plot_best_fit_ellipse(plot_filename + '_{id}.pdf'.format(id=id), cutout, best_fit_model, header)
 
     logging_tags = {parameter: getattr(best_fit_model, parameter).value for parameter in best_fit_model.param_names}
     logging_tags['filename'] = image_filename
@@ -156,6 +156,7 @@ def fit_cutout(data, source, plot_filename, image_filename, header, fit_circle=T
 
     fit_results = {param: getattr(best_fit_model, param).value for param in best_fit_model.param_names}
     fit_results['x0_centroid'], fit_results['y0_centroid'] = x0, y0
+    fit_results['sourceid'] = id
     return fit_results
 
 

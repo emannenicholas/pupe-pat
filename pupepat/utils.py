@@ -60,14 +60,12 @@ def save_results(input_filename: str, best_fit_models: list,
         output_table = {param: [best_fit_model[param] for best_fit_model in best_fit_models]
                         for param in param_names}
         output_table['filename'] = [os.path.basename(input_filename)] * len(best_fit_models)
-        output_table['sourceid'] = range(len(best_fit_models))
         for keyword in header_keywords:
             output_table[keyword] = [hdu[0].header[keyword]] * len(best_fit_models)
         output_table = Table(output_table)
     else:
         for i, best_fit_model in enumerate(best_fit_models):
             best_fit_model['filename'] = os.path.basename(input_filename)
-            best_fit_model['sourceid'] = i
             for keyword in header_keywords:
                 best_fit_model[keyword] = hdu[0].header[keyword]
             logger.info(best_fit_model)
