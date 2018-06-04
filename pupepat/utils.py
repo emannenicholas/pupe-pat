@@ -146,6 +146,21 @@ def get_inliers(data, threshold):
     return scaled_absolute_deviation <= threshold
 
 
+def get_primary_extension(hdu: fits.HDUList):
+    """
+    Figure out which is the primary extension (1 if fpacked, 0 otherwise)
+    :param hdu: astropy.io.fits.HDUList
+    :return: int
+    """
+    _, file_extension = os.path.splitext(hdu.filename())
+    if file_extension == '.fz':
+        primary_extension = 1
+    else:
+        primary_extension = 0
+
+    return primary_extension
+
+
 def is_unstitched(hdu):
     """
     Check if a file has been stitched or not
@@ -155,7 +170,9 @@ def is_unstitched(hdu):
     :param hdu: astropy fits HDU list
     :rtype: bool
     """
-    if 'NAXIS3' in hdu['SCI'].header:
+    primary_extension = get_primary_extension(hdu)
+
+    if 'NAXIS3' in hdu[primary_extension].header:
         return True
 
     sci_extension_counter = 0
@@ -185,7 +202,9 @@ def should_process_image(path, proposal_id='LCOEngineering'):
         logger.error('File appears to be unstitched.', extra={'tags': {'filename': path}})
         return False
 
-    header = hdu['SCI'].header
+    primary_extension = get_primary_extension(hdu)
+
+    header = hdu[primary_extension].header
     should_process = np.abs(header.get('FOCDMD', 0.0)) > 0.0
     should_process &= header.get('PROPID') == proposal_id
     should_process &= header.get('OBSTYPE') == 'EXPOSE' or header.get('OBSTYPE') == 'EXPERIMENTAL'
