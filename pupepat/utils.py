@@ -152,7 +152,7 @@ def get_primary_extension(hdu: fits.HDUList):
     :param hdu: astropy.io.fits.HDUList
     :return: int
     """
-    _, file_extension = os.path.splitext(hdu.filename)
+    _, file_extension = os.path.splitext(hdu.filename())
     if file_extension == '.fz':
         primary_extension = 1
     else:
