@@ -15,6 +15,9 @@ from pupepat.utils import get_inliers, offsets, estimate_scatter, prettify_focdm
 from pupepat.plot import plot_quiver
 import numpy as np
 from astropy.io import ascii
+import logging
+
+logger = logging.getLogger('pupepat')
 
 
 def make_quiver_plot(output_dir, output_table, output_plot='pupe-pat'):
@@ -43,6 +46,8 @@ def make_quiver_plot(output_dir, output_table, output_plot='pupe-pat'):
         # If there are less than 5 images taken, don't bother making a quiver plot. The quiver plot requires
         # 2x2 free parameters so the fit will fail for less than 5.
         if len(focus_set) < 5:
+            logger.warning('Not attempting to make a quiver plot because there are not enough images in the FOCDMD',
+                           extra={'tags': {'FOCDMD': demanded_focus}})
             continue
 
         # Fit a smooth surface to inner and outer offsets
