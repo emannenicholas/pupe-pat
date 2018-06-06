@@ -46,17 +46,17 @@ def make_quiver_plot(output_dir, output_table, output_plot='pupe-pat'):
         # If there are less than 5 images taken, don't bother making a quiver plot. The quiver plot requires
         # 2x2 free parameters so the fit will fail for less than 5.
         if len(focus_set) < 5:
-            logger.warning('Not attempting to make a quiver plot because there are not enough images in the FOCDMD',
+            logger.warning('Not attempting to make a quiver plot because '
+                           'there are not enough images at this focus position',
                            extra={'tags': {'FOCDMD': demanded_focus}})
-            continue
+        else:
+            # Fit a smooth surface to inner and outer offsets
+            focus_surface = fit_focus_surface(focus_set)
 
-        # Fit a smooth surface to inner and outer offsets
-        focus_surface = fit_focus_surface(focus_set)
-
-        # Make the actual plot
-        output_filename = os.path.join(output_dir, '{basename}-{focdmd}-quiver.pdf'.format(basename=output_plot,
+            # Make the actual plot
+            output_filename = os.path.join(output_dir, '{basename}-{focdmd}-quiver.pdf'.format(basename=output_plot,
                                                                                       focdmd=prettify_focdmd(demanded_focus)))
-        plot_quiver(focus_set, focus_surface, output_filename)
+            plot_quiver(focus_set, focus_surface, output_filename)
 
 
 def fit_focus_surface(data):
