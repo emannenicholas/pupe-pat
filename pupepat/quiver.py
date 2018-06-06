@@ -31,6 +31,7 @@ def make_quiver_plot(output_dir, output_table, output_plot='pupe-pat'):
     for demanded_focus in np.unique(data['FOCDMD']):
 
         focus_set = data[data['FOCDMD'] == demanded_focus]
+
         # Calculate outliers using plain centroid and center of the circles
         centroid_inliers = get_inliers(offsets(focus_set['x0_centroid'], focus_set['y0_centroid'], focus_set['x0_outer'], focus_set['y0_outer']), 6.0)
         focus_set = focus_set[centroid_inliers]
@@ -38,6 +39,11 @@ def make_quiver_plot(output_dir, output_table, output_plot='pupe-pat'):
         # Calculate outliers using nearby points
         neighbor_inliers = get_neighbor_inliers(focus_set)
         focus_set = focus_set[neighbor_inliers]
+
+        # If there are less than 5 images taken, don't bother making a quiver plot. The quiver plot requires
+        # 2x2 free parameters so the fit will fail for less than 5.
+        if len(focus_set) < 5:
+            continue
 
         # Fit a smooth surface to inner and outer offsets
         focus_surface = fit_focus_surface(focus_set)
