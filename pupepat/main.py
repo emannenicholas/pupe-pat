@@ -82,6 +82,10 @@ def analyze_directory():
     images_to_analyze = [image for image in glob(os.path.join(args.input_dir, '*fits*'))
                          if should_process_image(image, args.proposal_id)]
 
+    if len(images_to_analyze) == 0:
+        logger.error('No images to analyze in directory: {}'.format(args.input_dir))
+        sys.exit()
+
     output_table = None
     for image_filename in images_to_analyze:
         output_table = analyze_image(image_filename, output_table, os.path.join(args.output_dir, args.output_table),
