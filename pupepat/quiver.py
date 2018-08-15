@@ -10,6 +10,7 @@ License
 February 2018
 """
 import os
+import sys
 from pupepat.surface import SurfaceFitter
 from pupepat.utils import get_inliers, offsets, estimate_scatter, prettify_focdmd
 from pupepat.plot import plot_quiver
@@ -28,9 +29,14 @@ def make_quiver_plot(output_dir, output_table, output_plot='pupe-pat'):
     :param output_plot: Filename for the plot
     """
     # Read in the data table
-    data = ascii.read(os.path.join(output_dir, output_table))
+    try:
+        data = ascii.read(os.path.join(output_dir, output_table))
+    except FileNotFoundError as e:
+        logger.error('Unable to make quiver plot: No fitting data table in output directory: {}'.format(output_dir))
+        logger.error(e)
+        sys.exit(1)
+        
     data.sort('FOCDMD')
-
     for demanded_focus in np.unique(data['FOCDMD']):
 
         focus_set = data[data['FOCDMD'] == demanded_focus]

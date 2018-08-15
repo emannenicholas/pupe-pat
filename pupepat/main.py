@@ -84,7 +84,7 @@ def analyze_directory():
 
     if len(images_to_analyze) == 0:
         logger.error('No images to analyze in directory: {}'.format(args.input_dir))
-        sys.exit()
+        sys.exit(1)
 
     output_table = None
     for image_filename in images_to_analyze:
