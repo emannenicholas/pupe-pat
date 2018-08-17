@@ -34,6 +34,7 @@ from watchdog.events import FileSystemEventHandler
 from glob import glob
 import argparse
 import os
+import pprint
 import yaml
 
 from pupepat.quiver import make_quiver_plot
@@ -63,20 +64,23 @@ def handle_args_and_config():
 
     args = parser.parse_args()
 
-    # update utils.config dict with custom values if supplied, and
-    # supplied-or-not, dump the config to output-dir
-    config_dump_filename = 'pupe-pat.yaml.out'
-    
+    # update utils.config dict with custom values if supplied
     if args.config_filename:
         with open(args.config_filename, "r") as yaml_file:
             custom_config = yaml.load(yaml_file)
-        config.update(custom_config)
-        config_dump_filename = args.config_filename + '.out'
-    
-    with open(os.path.join(args.output_dir, config_dump_filename), 'w') as output_file:
-        yaml.dump(config, output_file, default_flow_style=False)
         update_mapping(config, custom_config)
         logger.debug('updated config:\n{}'.format(pprint.pformat(config)))
+        config_dump_filename = os.path.basename(args.config_filename)
+    else:
+        config_dump_filename = 'pupe-pat-default-config.yaml'
+
+    # custom config or not, dump the config to output-dir
+    try:
+        with open(os.path.join(args.output_dir, config_dump_filename), 'w') as output_file:
+            yaml.dump(config, output_file, default_flow_style=False)
+    except PermissionError as e:
+        logger.error('Check write permissions of output directory: {}\n{}'.format(args.output_dir, e))
+        sys.exit(1)
 
     return args
 
@@ -116,30 +120,30 @@ def analyze_directory():
 
 
 def analyze_image(filename, output_table, output_filename, output_directory):
-    try:
-        # Run the analysis on the new frame
-        logger.info('Fitting pupil model', extra={'tags': {'filename': os.path.basename(filename)}})
-        file_basename, file_extension = os.path.splitext(os.path.basename(filename))
+#    try:
+    # Run the analysis on the new frame
+    logger.info('Fitting pupil model', extra={'tags': {'filename': os.path.basename(filename)}})
+    file_basename, file_extension = os.path.splitext(os.path.basename(filename))
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            if file_extension == '.fz':
-                temp_filename = os.path.join(temp_dir, os.path.basename(file_basename))
-                os.system('funpack -O {temp_filename} {filename}'.format(temp_filename=temp_filename,
-                                                                         filename=filename))
-                filename = temp_filename
+    with tempfile.TemporaryDirectory() as temp_dir:
+        if file_extension == '.fz':
+            temp_filename = os.path.join(temp_dir, os.path.basename(file_basename))
+            os.system('funpack -O {temp_filename} {filename}'.format(temp_filename=temp_filename,
+                                                                     filename=filename))
+            filename = temp_filename
 
-            plot_basename = os.path.join(output_directory, os.path.splitext(os.path.basename(filename))[0])
+        plot_basename = os.path.join(output_directory, os.path.splitext(os.path.basename(filename))[0])
 
-            best_fit_models = fit_defocused_image(filename, plot_basename)
-            best_fit_models = [best_fit_model for best_fit_model in best_fit_models if best_fit_model is not None]
-            if len(best_fit_models) > 0:
-                output_table = save_results(filename, best_fit_models, output_table, output_filename)
-    except Exception as e:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        tb_msg = traceback.format_exception(exc_type, exc_value, exc_tb)
-
-        logger.error('Error processing: {tb_msg}'.format(tb_msg=tb_msg),
-                     extra={'tags': {'filename': os.path.basename(os.path.basename(filename)), 'error': str(e)}})
+        best_fit_models = fit_defocused_image(filename, plot_basename)
+        best_fit_models = [best_fit_model for best_fit_model in best_fit_models if best_fit_model is not None]
+        if len(best_fit_models) > 0:
+            output_table = save_results(filename, best_fit_models, output_table, output_filename)
+#    except Exception as e:
+#        exc_type, exc_value, exc_tb = sys.exc_info()
+#        tb_msg = traceback.format_exception(exc_type, exc_value, exc_tb)
+#
+#        logger.error('Error processing: {tb_msg}'.format(tb_msg=tb_msg),
+#                     extra={'tags': {'filename': os.path.basename(os.path.basename(filename)), 'error': str(e)}})
     return output_table
 
 
