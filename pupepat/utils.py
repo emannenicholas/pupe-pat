@@ -28,7 +28,10 @@ logger = logging.getLogger('pupepat')
 #
 config = {
     'SEP': {
-        'mask_threshold': 20,
+        'deblend_contrast': 1.0,
+        'extract_threshold': 20.0,
+        'mask_threshold_scale_factor': 20.0,
+        'min_area': 1000,
     },
     'cutout': {
         'cutout_radius': 150,             # ref
@@ -114,10 +117,16 @@ def cutout_coordinates(cutout, x0, y0):
 
 
 def run_sep(data, mask_threshold=None):
+    deblend_contrast = config['SEP']['deblend_contrast']
+    extract_threshold = config['SEP']['extract_threshold']
+    mask_threshold_scale_factor = config['SEP']['mask_threshold_scale_factor']
+    min_area = config['SEP']['min_area']
+
     if mask_threshold is None:
-        mask_threshold = 20.0 * np.sqrt(np.median(data)) + np.median(data)
+        mask_threshold = mask_threshold_scale_factor * np.sqrt(np.median(data)) + np.median(data)
     background = sep.Background(np.ascontiguousarray(data), mask=np.ascontiguousarray(data > mask_threshold))
-    return sep.extract(data - background, 20.0, err=np.sqrt(data), minarea=1000, deblend_cont=1.0, filter_kernel=None)
+    return sep.extract(data - background, extract_threshold,
+                       err=np.sqrt(data), minarea=min_area, deblend_cont=deblend_contrast, filter_kernel=None)
 
 
 def prettify_focdmd(demanded_focus):
