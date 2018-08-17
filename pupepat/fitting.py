@@ -14,7 +14,7 @@ import numpy as np
 from astropy.io import fits
 
 from pupepat.ellipse import inside_ellipse
-from pupepat.utils import estimate_bias_level, make_cutout, cutout_coordinates, run_sep
+from pupepat.utils import estimate_bias_level, make_cutout, cutout_coordinates, run_sep, config
 from pupepat.plot import plot_best_fit_ellipse
 from astropy.modeling import fitting
 import os
@@ -83,9 +83,13 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     # Short circuit if either the source is in focus or if we just picked up a couple of hot columns
     got_bad_columns = (source['xmax'] - source['xmin']) < 200 and (source['ymax'] - source['ymin']) > 400
     got_bad_columns |= (source['xmax'] - source['xmin']) > 400 and (source['ymax'] - source['ymin']) < 200
+    
     in_focus = np.abs(data[int(source['y']), int(source['x'])] - background) > 200.0 * np.sqrt(background)
-    too_close_to_edge = source['x'] - 150 < 0 or source['y'] - 150 < 0
-    too_close_to_edge |= source['x'] + 150 > data.shape[1] or source['y'] + 150 > data.shape[0]
+
+    edge_limit = config['cutout']['cutout_edge_limit'] # parameterized
+    too_close_to_edge = source['x'] - edge_limit < 0 or source['y'] - edge_limit < 0
+    too_close_to_edge |= source['x'] + edge_limit > data.shape[1] or source['y'] + edge_limit > data.shape[0]
+    
     if got_bad_columns or in_focus or too_close_to_edge:
         if got_bad_columns:
             error_message = 'Star did not have enough columns. Likely an artifact'
@@ -96,8 +100,11 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
         logger.error(error_message, extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
         return
 
-    cutout = make_cutout(data, source['x'], source['y'], 150)
-    r = cutout_coordinates(cutout, 151, 151)
+
+    # made it past early exit -- yes, we belong here...
+    cutout_radius = config['cutout']['cutout_radius'] # parameterized
+    cutout = make_cutout(data, source['x'], source['y'], cutout_radius)
+    r = cutout_coordinates(cutout, cutout_radius + 1, cutout_radius + 1)
 
     inner_brightness_guess = np.median(cutout[r < 5])
     inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + inner_brightness_guess)

@@ -22,7 +22,7 @@ logging.captureWarnings(True)
 logConf = {"formatters": {"default": {"()": LCOGTFormatter}},
            "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "default",
                                     "stream": "ext://sys.stdout"}},
-           "loggers": {"pupepat": {"handlers": ["console"], "level": logging.INFO, 'propagate': False}},
+           "loggers": {"pupepat": {"handlers": ["console"], "level": logging.DEBUG, 'propagate': False}},
            "version": 1}
 
 logging.config.dictConfig(logConf)
@@ -34,24 +34,53 @@ from watchdog.events import FileSystemEventHandler
 from glob import glob
 import argparse
 import os
+import yaml
 
 from pupepat.quiver import make_quiver_plot
 from pupepat.fitting import fit_defocused_image
-from pupepat.utils import save_results, merge_pdfs, should_process_image
+from pupepat.utils import save_results, merge_pdfs, should_process_image, config
 import tempfile
 
 
-def run_watcher():
+def handle_args_and_config():
+    '''Parse and return the command line arguments. 
+    '''
     parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--input-dir', dest='input_dir', required=True, help='Input directory where the new files will appear.')
-    parser.add_argument('--output-dir', dest='output_dir', required=True, help='Directory to store output files.')
-    parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat', help='Filename of the table of fit results.')
+    
+    parser.add_argument('--input-dir', dest='input_dir', required=True,
+                        help='Input directory where the new files will appear.')
+    parser.add_argument('--output-dir', dest='output_dir', required=True,
+                        help='Directory to store output files.')
+    parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat',
+                        help='Filename of the table of fit results.')
     parser.add_argument('--output-plot', dest='output_plot', default='pupe-pat',
                         help='Filename of the quiver plot of fit results.')
     parser.add_argument('--proposal-id', dest='proposal_id', default='LCOEngineering',
                         help='Proposal ID used to take the pupil plate images')
+    parser.add_argument('--config-file', dest='config_filename', default=None,
+                        help='Filename of configuration YAML. See config.yaml.example, for example.')
+
     args = parser.parse_args()
+
+    # update utils.config dict with custom values if supplied, and
+    # supplied-or-not, dump the config to output-dir
+    config_dump_filename = 'pupe-pat.yaml.out'
+    
+    if args.config_filename:
+        with open(args.config_filename, "r") as yaml_file:
+            custom_config = yaml.load(yaml_file)
+        config.update(custom_config)
+        config_dump_filename = args.config_filename + '.out'
+    
+    with open(os.path.join(args.output_dir, config_dump_filename), 'w') as output_file:
+        yaml.dump(config, output_file, default_flow_style=False)
+
+    return args
+
+
+def run_watcher():
+    args = handle_args_and_config()
     observer = Observer()
     observer.schedule(Handler(args.output_dir, args.output_table, args.proposal_id), args.input_dir, recursive=True)
     observer.start()
@@ -68,17 +97,7 @@ def run_watcher():
 
 
 def analyze_directory():
-    parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--input-dir', dest='input_dir', required=True, help='Input directory where the new files will appear.')
-    parser.add_argument('--output-dir', dest='output_dir', required=True, help='Directory to store output files.')
-    parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat', help='Filename of the table of fit results.')
-    parser.add_argument('--output-plot', dest='output_plot', default='pupe-pat',
-                        help='Filename of the quiver plot of fit results.')
-    parser.add_argument('--proposal-id', dest='proposal_id', default='LCOEngineering',
-                        help='Proposal ID used to take the pupil plate images')
-
-    args = parser.parse_args()
+    args = handle_args_and_config()
     images_to_analyze = [image for image in glob(os.path.join(args.input_dir, '*fits*'))
                          if should_process_image(image, args.proposal_id)]
 

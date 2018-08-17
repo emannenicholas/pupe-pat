@@ -20,6 +20,33 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 
 logger = logging.getLogger('pupepat')
 
+#
+# configuraton for everything: image filter, cutout, solver guesses, etc.
+# this dictionary holds the default values. if --config-file is specified,
+# that file is read and this dict is updated. It's written to the --output-dir
+# as yaml file
+#
+config = {
+    'SEP': {
+        'mask_threshold': 20,
+    },
+    'cutout': {
+        'cutout_radius': 150,             # ref
+        'cutout_edge_limit': 150,         # ref
+        'inner_guess_scaling_factor': 4,
+    },
+    'fitting': {
+        'inner_brightness': 5,
+        'inside_donut_scale_factor': 20,
+        'radius': 5,
+    },
+    'image_filters': {'bad_column_max': 400,
+                      'bad_column_min': 200,
+                      'edge_dist_px': 150,
+                      'in_focus_scale_factor': 200,
+    },
+}
+
 
 def offsets(x1, y1, x2, y2):
     return ((x2 - x1) ** 2.0 + (y2 - y1) ** 2.0) ** 0.5
@@ -76,6 +103,8 @@ def save_results(input_filename: str, best_fit_models: list,
 
 
 def make_cutout(data, x0, y0, r):
+    '''Slice the data array centered on (x0,y0) from -r to r+1 in both dimensions.
+    '''
     return data[int(y0 - r):int(y0 + r + 1), int(x0 - r):int(x0 + r + 1)]
 
 
