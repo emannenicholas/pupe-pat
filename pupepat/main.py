@@ -38,7 +38,7 @@ import yaml
 
 from pupepat.quiver import make_quiver_plot
 from pupepat.fitting import fit_defocused_image
-from pupepat.utils import save_results, merge_pdfs, should_process_image, config
+from pupepat.utils import save_results, merge_pdfs, should_process_image, config, update_mapping
 import tempfile
 
 
@@ -75,6 +75,8 @@ def handle_args_and_config():
     
     with open(os.path.join(args.output_dir, config_dump_filename), 'w') as output_file:
         yaml.dump(config, output_file, default_flow_style=False)
+        update_mapping(config, custom_config)
+        logger.debug('updated config:\n{}'.format(pprint.pformat(config)))
 
     return args
 

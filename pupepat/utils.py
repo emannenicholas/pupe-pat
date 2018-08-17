@@ -13,6 +13,7 @@ from astropy.stats import median_absolute_deviation
 import numpy as np
 from astropy.table import Table
 from astropy.io import fits, ascii
+import collections
 import os
 import sep
 import logging
@@ -49,6 +50,16 @@ config = {
                       'in_focus_scale_factor': 200,
     },
 }
+
+def update_mapping(dest, source):
+    '''Update dest dictionary with key,value pairs from source dictionary.
+    '''
+    for key, value in source.items():
+        if isinstance(value, collections.Mapping):
+            dest[key] = update_mapping(dest.get(key, {}), value)
+        else:
+            dest[key] = value
+    return dest
 
 
 def offsets(x1, y1, x2, y2):
