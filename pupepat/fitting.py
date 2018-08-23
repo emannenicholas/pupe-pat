@@ -69,6 +69,8 @@ def fit_defocused_image(filename, plot_basename):
     hdu = fits.open(filename)
     data = float(hdu[0].header['GAIN']) * (hdu[0].data - estimate_bias_level(hdu))
     sources = run_sep(data)
+    logger.info('Found {} sources'.format(len(sources)),
+                extra= {'tags': {'filename': os.path.basename(filename)}})
     best_fit_models = [fit_cutout(data, source, plot_basename, os.path.basename(filename),
                                   hdu[0].header, i)
                        for i, source in enumerate(sources)]
