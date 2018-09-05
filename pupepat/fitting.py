@@ -14,7 +14,7 @@ import numpy as np
 from astropy.io import fits
 
 from pupepat.ellipse import inside_ellipse
-from pupepat.utils import estimate_bias_level, make_cutout, cutout_coordinates, run_sep, config
+from pupepat.utils import make_cutout, cutout_coordinates, run_sep, config, get_bias_corrected_data_in_electrons
 from pupepat.plot import plot_best_fit_ellipse
 from astropy.modeling import fitting
 import os
@@ -67,10 +67,12 @@ def elliptical_annulus(x, y, x0_inner=0.0, y0_inner=0.0, a_inner=1.0, b_inner=1.
 def fit_defocused_image(filename, plot_basename):
     logger.info('Extracting sources', extra={'tags': {'filename': os.path.basename(filename)}})
     hdu = fits.open(filename)
-    data = float(hdu[0].header['GAIN']) * (hdu[0].data - estimate_bias_level(hdu))
+    data = get_bias_corrected_data_in_electrons(hdu)
+
     sources = run_sep(data)
     logger.info('Found {} sources'.format(len(sources)),
                 extra= {'tags': {'filename': os.path.basename(filename)}})
+
     best_fit_models = [fit_cutout(data, source, plot_basename, os.path.basename(filename),
                                   hdu[0].header, i)
                        for i, source in enumerate(sources)]

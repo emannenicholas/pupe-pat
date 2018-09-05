@@ -61,23 +61,41 @@ def offsets(x1, y1, x2, y2):
     return ((x2 - x1) ** 2.0 + (y2 - y1) ** 2.0) ** 0.5
 
 
-def estimate_bias_level(hdu):
+def get_bias_corrected_data_in_electrons(hdu):
     """
-    Estimate the bias level of image
+    Estimate the bias level of image and substract it from the image.
+    If bias estimate is negative, issue warning and scale data.
 
     Uses median_absolute_deviation (MAD) to compute standard deviation.
+    Note: does not substract background from data to compute noise, as was done
+    prior to Sept.2018 parameter tuning.
 
     :param hdu: fits hdu with the image in question
 
-    :return: float bias_level
+    :return: np.array data_e
     """
+    gain = float(hdu[0].header['GAIN'])            # e-/count
+    read_noise_e = float(hdu[0].header['RDNOISE']) # e-/pixel
+    data_e = gain * hdu[0].data                    # counts to electrons
+
     # 1.48 here goes from median absolute deviation to standard deviation
-    noise = 1.48 * median_absolute_deviation(hdu[0].data - sep.Background(hdu[0].data.astype(np.float)))
-    gain = float(hdu[0].header['GAIN'])
-    read_noise = float(hdu[0].header['RDNOISE'])
-    bias_level = gain * np.median(hdu[0].data) - gain * gain * noise * noise + read_noise * read_noise
-    bias_level /= gain
-    return bias_level
+    noise_e = 1.48 * median_absolute_deviation(data_e)
+    #noise_e = 1.48 * median_absolute_deviation(hdu[0].data - sep.Background(hdu[0].data.astype(np.float)))
+
+    estimated_bias_level_in_electrons = np.median(data_e) - noise_e * noise_e + read_noise_e * read_noise_e
+
+    if estimated_bias_level_in_electrons < 0:
+        noise_e = 1.48 * median_absolute_deviation(data_e)
+        sqrt_median_e = np.sqrt(np.median(data_e))
+        scale_factor = sqrt_median_e / noise_e
+        warn = '''Negative bias {:0.2f}. Scaling data by (sqrt(median)/noise): ({:0.2f}/{:0.2f})={:0.2f}'''
+        logger.warning(warn.format(estimated_bias_level_in_electrons, scale_factor, sqrt_median_e, noise_e ))
+        data_e *= scale_factor
+    else:
+        # bias corrected data in electrons
+        data_e = data_e - estimated_bias_level_in_electrons
+
+    return data_e
 
 
 def save_results(input_filename: str, best_fit_models: list,
