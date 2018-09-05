@@ -32,8 +32,9 @@ logger = logging.getLogger('pupepat')
 config = {
     'SEP': {
         'extract_SN_threshold': 5.0,
-        'mask_threshold_scale_factor': 20.0,
+        'mask_threshold_scale_factor': 10.0,
         'min_area': 2000, # see RSilverd comment in story with eqn for this
+        'box_size': 128,
     },
     'cutout': {
         'cutout_radius': 150,
@@ -144,14 +145,19 @@ def cutout_coordinates(cutout, x0, y0):
 
 
 def run_sep(data, mask_threshold=None):
+    """Compute mask and background; then sep.extract sources.
+    """
     extract_SN_threshold = config['SEP']['extract_SN_threshold']
     mask_threshold_scale_factor = config['SEP']['mask_threshold_scale_factor']
+    box_size = config['SEP']['box_size']
     min_area = config['SEP']['min_area']
 
     if mask_threshold is None:
         mask_threshold = mask_threshold_scale_factor * np.sqrt(np.median(data)) + np.median(data)
 
-    background = sep.Background(np.ascontiguousarray(data), mask=np.ascontiguousarray(data > mask_threshold))
+    background = sep.Background(np.ascontiguousarray(data),
+                                mask=np.ascontiguousarray(data > mask_threshold),
+                                bw=box_size, bh=box_size)
     return sep.extract(data - background, extract_SN_threshold,
                        err=np.sqrt(data), minarea=min_area, deblend_cont=1.0, filter_kernel=None)
 
