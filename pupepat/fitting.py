@@ -160,8 +160,8 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     for keyword in ['xmin', 'xmax', 'ymin', 'ymax']:
         logging_tags[keyword] = float(source[keyword])
 
-    logger.info('Best fit parameters for PUPE-PAT model',
-                extra={'tags': logging_tags})
+    logger.debug('Best fit parameters for PUPE-PAT model',
+                 extra={'tags': logging_tags})
 
     fit_results = {param: getattr(best_fit_model, param).value for param in best_fit_model.param_names}
     fit_results['x0_centroid'], fit_results['y0_centroid'] = x0, y0
