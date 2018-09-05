@@ -69,6 +69,9 @@ def offsets(x1, y1, x2, y2):
 def estimate_bias_level(hdu):
     """
     Estimate the bias level of image
+
+    Uses median_absolute_deviation (MAD) to compute standard deviation.
+
     :param hdu: fits hdu with the image in question
 
     :return: float bias_level
@@ -109,7 +112,7 @@ def save_results(input_filename: str, best_fit_models: list,
             best_fit_model['filename'] = os.path.basename(input_filename)
             for keyword in header_keywords:
                 best_fit_model[keyword] = hdu[0].header[keyword]
-            logger.info(best_fit_model)
+            logger.debug(best_fit_model)
             output_table.add_row(best_fit_model)
 
     output_table.write(output_filename, format='ascii', overwrite=True)
