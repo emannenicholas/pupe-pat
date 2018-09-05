@@ -43,7 +43,7 @@ from pupepat.utils import save_results, merge_pdfs, should_process_image, config
 import tempfile
 
 
-def handle_args_and_config():
+def handle_args():
     '''Parse and return the command line arguments. 
     '''
     parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory',
@@ -117,7 +117,9 @@ def run_watcher():
 
 
 def analyze_directory():
-    args = handle_args_and_config()
+    args = handle_args()
+    handle_config(args.output_dir, args.config_filename)
+
     images_to_analyze = [image for image in glob(os.path.join(args.input_dir, '*fits*'))
                          if should_process_image(image, args.proposal_id)]
 
