@@ -27,27 +27,22 @@ logger = logging.getLogger('pupepat')
 # that file is read and this dict is updated. It's written to the --output-dir
 # as yaml file
 #
+# guess for the size of a defocused donut is 0.387" 4 FOCDMD
+#
 config = {
     'SEP': {
-        'deblend_contrast': 1.0,
-        'extract_threshold': 20.0,
+        'extract_SN_threshold': 5.0,
         'mask_threshold_scale_factor': 20.0,
-        'min_area': 1000,
+        'min_area': 2000, # see RSilverd comment in story with eqn for this
     },
     'cutout': {
-        'cutout_radius': 150,             # ref
-        'cutout_edge_limit': 150,         # ref
-        'inner_guess_scaling_factor': 4,
+        'cutout_radius': 150,
+        'cutout_edge_limit': 150,
     },
-    'fitting': {
-        'inner_brightness': 5,
-        'inside_donut_scale_factor': 20,
-        'radius': 5,
-    },
-    'image_filters': {'bad_column_max': 400,
-                      'bad_column_min': 200,
-                      'edge_dist_px': 150,
-                      'in_focus_scale_factor': 200,
+    'image_filters': {'bad_column_max': 400,   # not_plumbed
+                      'bad_column_min': 200,  # not_plumbed
+                      'edge_dist_px': 150,  # not_plumbed
+                      'in_focus_scale_factor': 200,  # not_plumbed
     },
 }
 
@@ -131,16 +126,16 @@ def cutout_coordinates(cutout, x0, y0):
 
 
 def run_sep(data, mask_threshold=None):
-    deblend_contrast = config['SEP']['deblend_contrast']
-    extract_threshold = config['SEP']['extract_threshold']
+    extract_SN_threshold = config['SEP']['extract_SN_threshold']
     mask_threshold_scale_factor = config['SEP']['mask_threshold_scale_factor']
     min_area = config['SEP']['min_area']
 
     if mask_threshold is None:
         mask_threshold = mask_threshold_scale_factor * np.sqrt(np.median(data)) + np.median(data)
+
     background = sep.Background(np.ascontiguousarray(data), mask=np.ascontiguousarray(data > mask_threshold))
-    return sep.extract(data - background, extract_threshold,
-                       err=np.sqrt(data), minarea=min_area, deblend_cont=deblend_contrast, filter_kernel=None)
+    return sep.extract(data - background, extract_SN_threshold,
+                       err=np.sqrt(data), minarea=min_area, deblend_cont=1.0, filter_kernel=None)
 
 
 def prettify_focdmd(demanded_focus):
