@@ -69,7 +69,7 @@ def fit_defocused_image(filename, plot_basename):
     hdu = fits.open(filename)
     data = get_bias_corrected_data_in_electrons(hdu)
 
-    sources = run_sep(data)
+    sources = run_sep(data, hdu[0].header)
     logger.info('Found {} sources'.format(len(sources)),
                 extra= {'tags': {'filename': os.path.basename(filename)}})
 
@@ -121,7 +121,7 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     r = cutout_coordinates(cutout, x0, y0)
 
     # Run sep again and make sure there is only one source in the cutout
-    cutout_sources = run_sep(cutout, mask_threshold=25.0 * np.sqrt(background) + background)
+    cutout_sources = run_sep(cutout, header, mask_threshold=25.0 * np.sqrt(background) + background)
 
     if len(cutout_sources) > 1:
         logger.error('Too many sources detected in cutout. Likely source crowding.',

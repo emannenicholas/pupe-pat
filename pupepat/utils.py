@@ -144,8 +144,8 @@ def cutout_coordinates(cutout, x0, y0):
     return np.sqrt((x - x0) ** 2.0 + (y - y0) ** 2.0)
 
 
-def run_sep(data, mask_threshold=None):
-    """Compute mask and background; then sep.extract sources.
+def run_sep(data, header, mask_threshold=None):
+    """Compute mask, background, err; then sep.extract sources.
     """
     extract_SN_threshold = config['SEP']['extract_SN_threshold']
     mask_threshold_scale_factor = config['SEP']['mask_threshold_scale_factor']
@@ -158,8 +158,11 @@ def run_sep(data, mask_threshold=None):
     background = sep.Background(np.ascontiguousarray(data),
                                 mask=np.ascontiguousarray(data > mask_threshold),
                                 bw=box_size, bh=box_size)
+
+    read_noise_e = float(header['RDNOISE'])
+    extract_err = np.sqrt(data + read_noise_e**2.0)
     return sep.extract(data - background, extract_SN_threshold,
-                       err=np.sqrt(data), minarea=min_area, deblend_cont=1.0, filter_kernel=None)
+                       err=extract_err, minarea=min_area, deblend_cont=1.0, filter_kernel=None)
 
 
 def prettify_focdmd(demanded_focus):
