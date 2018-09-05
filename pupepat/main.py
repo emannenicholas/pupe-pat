@@ -22,7 +22,7 @@ logging.captureWarnings(True)
 logConf = {"formatters": {"default": {"()": LCOGTFormatter}},
            "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "default",
                                     "stream": "ext://sys.stdout"}},
-           "loggers": {"pupepat": {"handlers": ["console"], "level": logging.DEBUG, 'propagate': False}},
+           "loggers": {"pupepat": {"handlers": ["console"], "level": logging.INFO, 'propagate': False}},
            "version": 1}
 
 logging.config.dictConfig(logConf)
@@ -62,31 +62,45 @@ def handle_args_and_config():
     parser.add_argument('--config-file', dest='config_filename', default=None,
                         help='Filename of configuration YAML. See config.yaml.example, for example.')
 
-    args = parser.parse_args()
+    # verbose and quite are mutually exclusive
+    logging_group = parser.add_mutually_exclusive_group()
+    logging_group.add_argument('-v', '--verbose', action='count', default=0, dest='verbosity',
+                          help='Verbosity/Log Level. Repeatable: -v=show info; -vv=show debug')
+    logging_group.add_argument('-q', '--quiet', action='count', default=0, dest='quietness',
+                          help='Quietness/Log Level. Repeatable: -q=no warnings; -qq=no errors')
 
+    args = parser.parse_args()
+    logger.setLevel(10 * max((3 - args.verbosity + args.quietness), 1))
+
+    return args
+
+
+def handle_config(output_dir, config_filename):
+    '''Update the Configuration dictionary (utils.config) and write it to output-dir
+    '''
     # update utils.config dict with custom values if supplied
-    if args.config_filename:
+    if config_filename is not None:
         with open(args.config_filename, "r") as yaml_file:
             custom_config = yaml.load(yaml_file)
-        update_mapping(config, custom_config)
-        logger.debug('updated config:\n{}'.format(pprint.pformat(config)))
-        config_dump_filename = os.path.basename(args.config_filename)
+            update_mapping(config, custom_config)
+            logger.debug('updated config:\n{}'.format(pprint.pformat(config)))
+        config_dump_filename = os.path.basename(config_filename)
     else:
         config_dump_filename = 'pupe-pat-default-config.yaml'
 
     # custom config or not, dump the config to output-dir
     try:
-        with open(os.path.join(args.output_dir, config_dump_filename), 'w') as output_file:
+        with open(os.path.join(output_dir, config_dump_filename), 'w') as output_file:
             yaml.dump(config, output_file, default_flow_style=False)
     except PermissionError as e:
         logger.error('Check write permissions of output directory: {}\n{}'.format(args.output_dir, e))
         sys.exit(1)
 
-    return args
-
 
 def run_watcher():
-    args = handle_args_and_config()
+    args = handle_args()
+    handle_config(args.output_dir, args.config_filename)
+    
     observer = Observer()
     observer.schedule(Handler(args.output_dir, args.output_table, args.proposal_id), args.input_dir, recursive=True)
     observer.start()
