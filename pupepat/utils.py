@@ -40,10 +40,11 @@ config = {
         'cutout_radius': 150,
         'cutout_edge_limit': 150,
     },
-    'image_filters': {'bad_column_max': 400,   # not_plumbed
-                      'bad_column_min': 200,  # not_plumbed
-                      'edge_dist_px': 150,  # not_plumbed
-                      'in_focus_scale_factor': 200,  # not_plumbed
+    'source_filters': {'bad_column_max': 400.0,
+                       'bad_column_min': 200.0,
+                       'edge_proximity_limit': 150.0,
+                       'focus_scale_factor': 200.0,
+                       'ellipicity_limit': 1.15,
     },
 }
 
