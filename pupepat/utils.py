@@ -134,6 +134,53 @@ def save_results(input_filename: str, best_fit_models: list,
     return output_table
 
 
+def source_is_valid(data, s):
+    """
+    Validate source as reasonable. Checks:
+    1. bad columns in image
+    2. source is in focus (not a pupil)
+    3. too close to edge of image
+    4. not circular enough
+
+    :param data: image data from which the source was extracted
+    :param s: SEP extracted source
+
+    :return Boolean is_valid
+    """
+    bad_column_max = config['source_filters']['bad_column_max']
+    bad_column_min = config['source_filters']['bad_column_min']
+    got_bad_columns = (s['xmax'] - s['xmin']) < bad_column_min and (s['ymax'] - s['ymin']) > bad_column_max
+    got_bad_columns |= (s['xmax'] - s['xmin']) > bad_column_max and (s['ymax'] - s['ymin']) < bad_column_min
+
+    focus_scale_factor = config['source_filters']['focus_scale_factor']
+    background = np.median(data)
+    in_focus = np.abs(data[int(s['y']), int(s['x'])] - background) > focus_scale_factor * np.sqrt(background)
+
+    edge_limit = config['source_filters']['edge_proximity_limit']
+    too_close_to_edge = s['x'] - edge_limit < 0 or s['y'] - edge_limit < 0
+    too_close_to_edge |= s['x'] + edge_limit > data.shape[1] or s['y'] + edge_limit > data.shape[0]
+
+    ellipticity_limit = config['source_filters']['ellipicity_limit']
+    not_a_circle = (max((s['a']/s['b']), (s['a']/s['b'])) > ellipticity_limit)
+
+    if got_bad_columns or in_focus or too_close_to_edge or not_a_circle:
+        msg = 'Filtered source at ({:0.2f},{:0.2f})'.format(s['x'], s['y'])
+        if got_bad_columns:
+            error_message = 'Not enough columns.'
+        elif in_focus:
+            error_message = 'Not a donut.'
+        elif too_close_to_edge:
+            error_message = 'Too close to the edge.'
+        elif not_a_circle:
+            error_message = 'Not a circular source.'
+        logger.warn('{}: {}'.format(msg, error_message))
+    else:
+        logger.info('Source at ({:0.2f}, {:0.2f}. A, B: ({:0.2f}, {:0.2f})'\
+                    .format(s['x'], s['y'], s['a'], s['b']))
+
+    return not (got_bad_columns or in_focus or too_close_to_edge or not_a_circle)
+
+
 def make_cutout(data, x0, y0, r):
     '''Slice the data array centered on (x0,y0) from -r to r+1 in both dimensions.
     '''

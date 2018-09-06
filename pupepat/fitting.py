@@ -14,7 +14,8 @@ import numpy as np
 from astropy.io import fits
 
 from pupepat.ellipse import inside_ellipse
-from pupepat.utils import make_cutout, cutout_coordinates, run_sep, config, get_bias_corrected_data_in_electrons
+from pupepat.utils import make_cutout, cutout_coordinates, run_sep, config
+from pupepat.utils import get_bias_corrected_data_in_electrons, source_is_valid
 from pupepat.plot import plot_best_fit_ellipse
 from astropy.modeling import fitting
 import os
@@ -80,32 +81,10 @@ def fit_defocused_image(filename, plot_basename):
 
 
 def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circle=True, fit_gradient=False):
+    if not source_is_valid(data, source):
+        return
     logger.info('Fitting source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
 
-    background = np.median(data)
-
-    # Short circuit if either the source is in focus or if we just picked up a couple of hot columns
-    got_bad_columns = (source['xmax'] - source['xmin']) < 200 and (source['ymax'] - source['ymin']) > 400
-    got_bad_columns |= (source['xmax'] - source['xmin']) > 400 and (source['ymax'] - source['ymin']) < 200
-    
-    in_focus = np.abs(data[int(source['y']), int(source['x'])] - background) > 200.0 * np.sqrt(background)
-
-    edge_limit = config['cutout']['cutout_edge_limit'] # parameterized
-    too_close_to_edge = source['x'] - edge_limit < 0 or source['y'] - edge_limit < 0
-    too_close_to_edge |= source['x'] + edge_limit > data.shape[1] or source['y'] + edge_limit > data.shape[0]
-    
-    if got_bad_columns or in_focus or too_close_to_edge:
-        if got_bad_columns:
-            error_message = 'Star did not have enough columns. Likely an artifact'
-        elif in_focus:
-            error_message = 'Star was not a donut.'
-        elif too_close_to_edge:
-            error_message = 'Star was too close to the edge of the image.'
-        logger.error(error_message, extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
-        return
-
-
-    # made it past early exit -- yes, we belong here...
     cutout_radius = config['cutout']['cutout_radius'] # parameterized
     cutout = make_cutout(data, source['x'], source['y'], cutout_radius)
     r = cutout_coordinates(cutout, cutout_radius + 1, cutout_radius + 1)
@@ -121,6 +100,7 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     r = cutout_coordinates(cutout, x0, y0)
 
     # Run sep again and make sure there is only one source in the cutout
+    background = np.median(data)
     cutout_sources = run_sep(cutout, header, mask_threshold=25.0 * np.sqrt(background) + background)
 
     if len(cutout_sources) > 1:
