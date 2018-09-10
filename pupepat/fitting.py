@@ -92,13 +92,21 @@ def cutout_has_multiple_sources(data, cutout, header, background):
 
 
 def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circle=True, fit_gradient=False):
+    logger.debug('Validating source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
     if not source_is_valid(data, source):
         return
     logger.info('Fitting source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
 
-    cutout_radius = config['cutout']['cutout_radius'] # parameterized
-    cutout = make_cutout(data, source['x'], source['y'], cutout_radius)
+    cutout_radius = config['cutout']['cutout_radius']
+    cutout_padding = config['cutout']['cutout_padding']
+    pad = cutout_padding * max((source['ymax']-source['ymin']), (source['xmax']-source['xmin']))
+    cutout = data[int(source['ymin']-pad):int(source['ymax']+pad),
+                  int(source['xmin']-pad):int(source['xmax']+pad)]
     r = cutout_coordinates(cutout, cutout_radius + 1, cutout_radius + 1)
+
+    ##inner_radius_guess = 3.4 * np.abs(header['FOCDMD']) # Rob Siverd, personal communiation
+    ##outer_radius_guess = 3.0 * inner_radius_guess \
+    ##                     if header['FOCDMD'] > 0 else 2.25 * inner_radius_guess
 
     inner_brightness_guess = np.median(cutout[r < 5])
     inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + inner_brightness_guess)
