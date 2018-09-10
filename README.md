@@ -87,11 +87,13 @@ and direction of the offset of the centers of the inner and outer edges of
 the pupil plate. The "best" M2 tip and tilt are marked with a red X.
 
 The code can be run in two modes (see below): real-time and offline modes.
-The offline mode will analyze all images in a given directory that are 
-taken by the LCOEngineering proposal (default), that are EXPOSE or EXPERIMENTAL
-obstypes, and are defocused (FOCDMD != 0.0). To ensure that the proposal
-is correctly included in the header, the Sequencer should be set to manual
-when taking the images.
+The offline mode will analyze all images in a given directory
+that are EXPOSE or EXPERIMENTAL obstypes, and are defocused (FOCDMD != 0.0).
+By default, `PROPOSAL_ID` is not used to filter images. However, the
+`--proposal-id PROPOSAL_ID` argument may be specified on the command line
+to analyze only those images that are taken by the specified `PROPOSAL_ID`.
+To ensure that the proposal is correctly included in the header, the Sequencer
+should be set to manual when taking the images.
 
 The real-time mode has the same criteria for which images to analyze, but
 watches the input directory for new files. Right before an M2 tip/tilt run,
