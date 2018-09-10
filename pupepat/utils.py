@@ -306,13 +306,14 @@ def is_unstitched(hdu):
     return sci_extension_counter > 1
 
 
-def should_process_image(path, proposal_id='LCOEngineering'):
+def should_process_image(path, proposal_id=None):
     """
     Test if we should try to process a given image.
 
     We assume that all images of interest will be defocused (abs(FOCDMD) > 0) and either an experimental or
-    exposure obstype. We only consider images taken with the given proposal id. If the frame is from a Sinistro, we
-    only consider frames that are already stitched.
+    exposure obstype. If a proposal_id is supplied, we only consider images taken with the given proposal id.
+    The default is to not filter on propsal_id (i.e. proposal_id is None).
+    If the frame is from a Sinistro, we only consider frames that are already stitched.
 
     :param path: Full path to the image of interest
     :param proposal_id: Proposal ID for images to process
@@ -328,6 +329,6 @@ def should_process_image(path, proposal_id='LCOEngineering'):
 
     header = hdu[primary_extension].header
     should_process = np.abs(header.get('FOCDMD', 0.0)) > 0.0
-    should_process &= header.get('PROPID') == proposal_id
+    should_process &= proposal_id is None or header.get('PROPID') == proposal_id
     should_process &= header.get('OBSTYPE') == 'EXPOSE' or header.get('OBSTYPE') == 'EXPERIMENTAL'
     return should_process

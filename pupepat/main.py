@@ -57,7 +57,7 @@ def handle_args():
                         help='Filename of the table of fit results.')
     parser.add_argument('--output-plot', dest='output_plot', default='pupe-pat',
                         help='Filename of the quiver plot of fit results.')
-    parser.add_argument('--proposal-id', dest='proposal_id', default='LCOEngineering',
+    parser.add_argument('--proposal-id', dest='proposal_id', default=None,
                         help='Proposal ID used to take the pupil plate images')
     parser.add_argument('--config-file', dest='config_filename', default=None,
                         help='Filename of configuration YAML. See config.yaml.example, for example.')
