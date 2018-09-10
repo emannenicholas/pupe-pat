@@ -28,6 +28,7 @@ def plot_best_fit_ellipse(output_filename, data_cutout, best_fit_model, header):
     """
     pyplot.clf()
     pyplot.imshow(data_cutout, origin='lower')
+    pyplot.colorbar()
     x_inner, y_inner = generate_ellipse(best_fit_model.x0_inner, best_fit_model.y0_inner, best_fit_model.a_inner,
                                         best_fit_model.b_inner, best_fit_model.theta_inner)
     pyplot.plot(x_inner, y_inner, color='cyan')
