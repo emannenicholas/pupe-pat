@@ -80,6 +80,17 @@ def fit_defocused_image(filename, plot_basename):
     return best_fit_models
 
 
+def cutout_has_multiple_sources(data, cutout, header, background):
+    # Run sep again and make sure there is only one source in the cutout
+    cutout_sources = run_sep(cutout, header, mask_threshold=25.0 * np.sqrt(background) + background)
+
+    if len(cutout_sources) > 1:
+        logger.error('Too many sources detected in cutout. Likely source crowding.',
+                     extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
+
+    return len(cutout_sources) > 1
+
+
 def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circle=True, fit_gradient=False):
     if not source_is_valid(data, source):
         return
@@ -99,13 +110,8 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     x0 = y0 = cutout_radius + 1.0
     r = cutout_coordinates(cutout, x0, y0)
 
-    # Run sep again and make sure there is only one source in the cutout
     background = np.median(data)
-    cutout_sources = run_sep(cutout, header, mask_threshold=25.0 * np.sqrt(background) + background)
-
-    if len(cutout_sources) > 1:
-        logger.error('Too many sources detected in cutout. Likely source crowding.',
-                     extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
+    if cutout_has_multiple_sources(data, cutout, header, background):
         return
 
     inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + background)
