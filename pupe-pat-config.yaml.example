@@ -6,21 +6,17 @@
 #
 
 SEP:
-  deblend_contrast: 1.0
-  extract_threshold: 20.0
-  mask_threshold_scale_factor: 20.0
-  min_area: 1000
+  extract_SN_threshold: 5.0
+  mask_threshold_scale_factor: 10.0
+  min_area: 2000
+  box_size: 128
 
 cutout:
-  inner_guess_scaling_factor: 4
+  cutout_radius: 150
 
-fitting:
-  inner_brightness: 5 # percent
-  inside_donut_scale_factor: 20
-  radius: 5
-
-image_filters:
+source_filters:
   bad_column_min: 200
   bad_column_max: 400  
-  edge_dist_px: 150
-  in_focus_scale_factor: 200
+  edge_proximity_limit: 150
+  focus_scale_factor: 200
+  ellipticity_limit: 1.15

@@ -38,13 +38,12 @@ config = {
     },
     'cutout': {
         'cutout_radius': 150,
-        'cutout_edge_limit': 150,
     },
     'source_filters': {'bad_column_max': 400.0,
                        'bad_column_min': 200.0,
                        'edge_proximity_limit': 150.0,
                        'focus_scale_factor': 200.0,
-                       'ellipicity_limit': 1.15,
+                       'ellipticity_limit': 1.15,
     },
 }
 
@@ -160,7 +159,7 @@ def source_is_valid(data, s):
     too_close_to_edge = s['x'] - edge_limit < 0 or s['y'] - edge_limit < 0
     too_close_to_edge |= s['x'] + edge_limit > data.shape[1] or s['y'] + edge_limit > data.shape[0]
 
-    ellipticity_limit = config['source_filters']['ellipicity_limit']
+    ellipticity_limit = config['source_filters']['ellipticity_limit']
     not_a_circle = (max((s['a']/s['b']), (s['a']/s['b'])) > ellipticity_limit)
 
     if got_bad_columns or in_focus or too_close_to_edge or not_a_circle:
