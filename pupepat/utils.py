@@ -33,11 +33,12 @@ config = {
     'SEP': {
         'extract_SN_threshold': 5.0,
         'mask_threshold_scale_factor': 10.0,
-        'min_area': 2000, # see RSilverd comment in story with eqn for this
+        'min_area': 2000,
         'box_size': 128,
     },
     'cutout': {
         'cutout_radius': 150,
+        'cutout_padding': 0.2 # percent additional margin added to each edge
     },
     'source_filters': {'bad_column_max': 400.0,
                        'bad_column_min': 200.0,

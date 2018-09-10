@@ -13,6 +13,7 @@ SEP:
 
 cutout:
   cutout_radius: 150
+  cutout_padding: 0.2
 
 source_filters:
   bad_column_min: 200
