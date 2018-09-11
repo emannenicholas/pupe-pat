@@ -82,7 +82,6 @@ def get_bias_corrected_data_in_electrons(hdu):
 
     # 1.48 here goes from median absolute deviation to standard deviation
     noise_e = 1.48 * median_absolute_deviation(data_e)
-    #noise_e = 1.48 * median_absolute_deviation(hdu[0].data - sep.Background(hdu[0].data.astype(np.float)))
 
     estimated_bias_level_in_electrons = np.median(data_e) - noise_e * noise_e + read_noise_e * read_noise_e
 
@@ -90,7 +89,7 @@ def get_bias_corrected_data_in_electrons(hdu):
         noise_e = 1.48 * median_absolute_deviation(data_e)
         sqrt_median_e = np.sqrt(np.median(data_e))
         scale_factor = sqrt_median_e / noise_e
-        msg = 'Negative bias {b=:0.2f}. Scaling data by (sqrt(median)/noise): ({r:0.2f}/{n:0.2f})= {s:0.2f}'
+        msg = 'Negative bias {b:0.2f}. Scaling data by (sqrt(median)/noise): ({r:0.2f}/{n:0.2f})= {s:0.2f}'
         logger.debug(msg.format(b=estimated_bias_level_in_electrons, s=scale_factor, r=sqrt_median_e, n=noise_e ))
         data_e *= scale_factor
     else:

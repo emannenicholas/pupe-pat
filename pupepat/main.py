@@ -62,7 +62,7 @@ def handle_args():
     parser.add_argument('--config-file', dest='config_filename', default=None,
                         help='Filename of configuration YAML. See config.yaml.example, for example.')
 
-    # verbose and quite are mutually exclusive
+    # verbose and quiet are mutually exclusive
     logging_group = parser.add_mutually_exclusive_group()
     logging_group.add_argument('-v', '--verbose', action='count', default=0, dest='verbosity',
                           help='Verbosity/Log Level. Repeatable: -v=show info; -vv=show debug')
