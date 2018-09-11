@@ -149,8 +149,8 @@ def source_is_valid(data, s):
     """
     bad_column_max = config['source_filters']['bad_column_max']
     bad_column_min = config['source_filters']['bad_column_min']
-    got_bad_columns = (s['xmax'] - s['xmin']) < bad_column_min and (s['ymax'] - s['ymin']) > bad_column_max
-    got_bad_columns |= (s['xmax'] - s['xmin']) > bad_column_max and (s['ymax'] - s['ymin']) < bad_column_min
+    got_bad_columns = (((s['xmax'] - s['xmin']) < bad_column_min and (s['ymax'] - s['ymin']) > bad_column_max) or
+                       ((s['xmax'] - s['xmin']) > bad_column_max and (s['ymax'] - s['ymin']) < bad_column_min))
 
     focus_scale_factor = config['source_filters']['focus_scale_factor']
     background = np.median(data)
