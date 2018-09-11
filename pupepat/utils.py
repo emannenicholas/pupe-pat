@@ -31,7 +31,7 @@ logger = logging.getLogger('pupepat')
 #
 config = {
     'SEP': {
-        'extract_SN_threshold': 5.0,
+        'extract_SN_threshold': 10.0,
         'mask_threshold_scale_factor': 10.0,
         'min_area': 2000,
         'box_size': 128,
