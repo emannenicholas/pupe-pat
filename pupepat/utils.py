@@ -200,6 +200,10 @@ def run_sep(data, header, mask_threshold=None):
     box_size = config['SEP']['box_size']
     min_area = config['SEP']['min_area']
 
+    # Pupils cover more pixels than point sources.
+    # So, set the number of source pixels to be 10% of the total (default=300000 pixels)
+    sep.set_extract_pixstack(max(300000, int(data.size * 0.1)))
+
     if mask_threshold is None:
         mask_threshold = mask_threshold_scale_factor * np.sqrt(np.median(data)) + np.median(data)
 
