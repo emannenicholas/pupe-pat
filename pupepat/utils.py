@@ -90,8 +90,8 @@ def get_bias_corrected_data_in_electrons(hdu):
         noise_e = 1.48 * median_absolute_deviation(data_e)
         sqrt_median_e = np.sqrt(np.median(data_e))
         scale_factor = sqrt_median_e / noise_e
-        warn = '''Negative bias {:0.2f}. Scaling data by (sqrt(median)/noise): ({:0.2f}/{:0.2f})={:0.2f}'''
-        logger.warning(warn.format(estimated_bias_level_in_electrons, scale_factor, sqrt_median_e, noise_e ))
+        msg = 'Negative bias {b=:0.2f}. Scaling data by (sqrt(median)/noise): ({r:0.2f}/{n:0.2f})= {s:0.2f}'
+        logger.debug(msg.format(b=estimated_bias_level_in_electrons, s=scale_factor, r=sqrt_median_e, n=noise_e ))
         data_e *= scale_factor
     else:
         # bias corrected data in electrons
@@ -164,7 +164,7 @@ def source_is_valid(data, s):
     not_a_circle = (max((s['a']/s['b']), (s['a']/s['b'])) > ellipticity_limit)
 
     if got_bad_columns or in_focus or too_close_to_edge or not_a_circle:
-        msg = 'Filtered source at ({:0.2f},{:0.2f})'.format(s['x'], s['y'])
+        msg = 'Filtered source at ({x:0.2f},{y:0.2f})'.format(x=s['x'], y=s['y'])
         if got_bad_columns:
             error_message = 'Not enough columns.'
         elif in_focus:
@@ -173,10 +173,10 @@ def source_is_valid(data, s):
             error_message = 'Too close to the edge.'
         elif not_a_circle:
             error_message = 'Not a circular source.'
-        logger.warn('{}: {}'.format(msg, error_message))
+        logger.warn('{msg}: {err}'.format(msg=msg, err=error_message))
     else:
-        logger.info('Source at ({:0.2f}, {:0.2f}. A, B: ({:0.2f}, {:0.2f})'\
-                    .format(s['x'], s['y'], s['a'], s['b']))
+        logger.info('Source at ({x:0.2f}, {y:0.2f}. A, B: ({a:0.2f}, {b:0.2f})'\
+                    .format(x=s['x'], y=s['y'], a=s['a'], b=s['b']))
 
     return not (got_bad_columns or in_focus or too_close_to_edge or not_a_circle)
 

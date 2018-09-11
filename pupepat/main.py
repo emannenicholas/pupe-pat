@@ -83,7 +83,7 @@ def handle_config(output_dir, config_filename):
         with open(args.config_filename, "r") as yaml_file:
             custom_config = yaml.load(yaml_file)
             update_mapping(config, custom_config)
-            logger.debug('updated config:\n{}'.format(pprint.pformat(config)))
+            logger.debug('updated config:\n{cfg}'.format(cfg=pprint.pformat(config)))
         config_dump_filename = os.path.basename(config_filename)
     else:
         config_dump_filename = 'pupe-pat-default-config.yaml'
@@ -93,7 +93,7 @@ def handle_config(output_dir, config_filename):
         with open(os.path.join(output_dir, config_dump_filename), 'w') as output_file:
             yaml.dump(config, output_file, default_flow_style=False)
     except PermissionError as e:
-        logger.error('Check write permissions of output directory: {}\n{}'.format(args.output_dir, e))
+        logger.error('Check write permissions of output directory: {d}\n{err}'.format(d=args.output_dir, err=e))
         sys.exit(1)
 
 
@@ -124,7 +124,7 @@ def analyze_directory():
                          if should_process_image(image, args.proposal_id)]
 
     if len(images_to_analyze) == 0:
-        logger.error('No images to analyze in directory: {}'.format(args.input_dir))
+        logger.error('No images to analyze in directory: {d}'.format(d=args.input_dir))
         sys.exit(1)
 
     output_table = None

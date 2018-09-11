@@ -71,7 +71,7 @@ def fit_defocused_image(filename, plot_basename):
     data = get_bias_corrected_data_in_electrons(hdu)
 
     sources = run_sep(data, hdu[0].header)
-    logger.info('Found {} sources'.format(len(sources)),
+    logger.info('Found {num_s} sources'.format(num_s=len(sources)),
                 extra= {'tags': {'filename': os.path.basename(filename)}})
 
     best_fit_models = [fit_cutout(data, source, plot_basename, os.path.basename(filename),
