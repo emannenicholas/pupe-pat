@@ -49,8 +49,8 @@ config = {
 }
 
 def update_mapping(dest, source):
-    '''Update dest dictionary with key,value pairs from source dictionary.
-    '''
+    """Update dest dictionary with key,value pairs from source dictionary.
+    """
     for key, value in source.items():
         if isinstance(value, collections.Mapping):
             dest[key] = update_mapping(dest.get(key, {}), value)
@@ -183,8 +183,8 @@ def source_is_valid(data, source):
 
 
 def make_cutout(data, x0, y0, r):
-    '''Slice the data array centered on (x0,y0) from -r to r+1 in both dimensions.
-    '''
+    """Slice the data array centered on (x0,y0) from -r to r+1 in both dimensions.
+    """
     return data[int(y0 - r):int(y0 + r + 1), int(x0 - r):int(x0 + r + 1)]
 
 

@@ -77,8 +77,8 @@ def parse_args():
 
 
 def handle_config(output_dir, config_filename):
-    '''Update the Configuration dictionary (utils.config) and write it to output-dir
-    '''
+    """Update the Configuration dictionary (utils.config) and write it to output-dir
+    """
     # update utils.config dict with custom values if supplied
     if config_filename is not None:
         with open(args.config_filename, "r") as yaml_file:
