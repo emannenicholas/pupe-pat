@@ -9,7 +9,7 @@ SEP:
   extract_SN_threshold: 5.0
   mask_threshold_scale_factor: 10.0
   min_area: 2000
-  box_size: 128
+  bg_box_size: 128
 
 cutout:
   cutout_radius: 150

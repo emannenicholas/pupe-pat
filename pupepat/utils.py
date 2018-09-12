@@ -34,7 +34,7 @@ config = {
         'extract_SN_threshold': 10.0,
         'mask_threshold_scale_factor': 10.0,
         'min_area': 2000,
-        'box_size': 128,
+        'bg_box_size': 128,
     },
     'cutout': {
         'cutout_radius': 150,
@@ -198,7 +198,7 @@ def run_sep(data, header, mask_threshold=None):
     """
     extract_SN_threshold = config['SEP']['extract_SN_threshold']
     mask_threshold_scale_factor = config['SEP']['mask_threshold_scale_factor']
-    box_size = config['SEP']['box_size']
+    bg_box_size = config['SEP']['bg_box_size']
     min_area = config['SEP']['min_area']
 
     # Pupils cover more pixels than point sources.
@@ -210,7 +210,7 @@ def run_sep(data, header, mask_threshold=None):
 
     background = sep.Background(np.ascontiguousarray(data),
                                 mask=np.ascontiguousarray(data > mask_threshold),
-                                bw=box_size, bh=box_size)
+                                bw=bg_box_size, bh=bg_box_size)
 
     read_noise_e = float(header['RDNOISE'])
     extract_err = np.sqrt(data + read_noise_e**2.0)
