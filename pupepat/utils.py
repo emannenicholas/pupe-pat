@@ -85,16 +85,18 @@ def get_bias_corrected_data_in_electrons(hdu):
 
     estimated_bias_level_in_electrons = np.median(data_e) - noise_e * noise_e + read_noise_e * read_noise_e
 
+    # If the bias is negative, there's something wrong.
+    # Scaling the data here is a work-around for that.
     if estimated_bias_level_in_electrons < 0:
         noise_e = 1.48 * median_absolute_deviation(data_e)
         sqrt_median_e = np.sqrt(np.median(data_e))
         scale_factor = sqrt_median_e / noise_e
         msg = 'Negative bias {b:0.2f}. Scaling data by (sqrt(median)/noise): ({r:0.2f}/{n:0.2f})= {s:0.2f}'
-        logger.debug(msg.format(b=estimated_bias_level_in_electrons, s=scale_factor, r=sqrt_median_e, n=noise_e ))
+        logger.warning(msg.format(b=estimated_bias_level_in_electrons, s=scale_factor, r=sqrt_median_e, n=noise_e ))
         data_e *= scale_factor
     else:
         # bias corrected data in electrons
-        data_e = data_e - estimated_bias_level_in_electrons
+        data_e -= estimated_bias_level_in_electrons
 
     return data_e
 
