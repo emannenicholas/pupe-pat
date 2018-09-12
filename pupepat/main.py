@@ -68,6 +68,9 @@ def parse_args():
                           help='Quietness/Log Level. Repeatable: -q=no warnings; -qq=no errors')
 
     args = parser.parse_args()
+
+    # default is logging.WARNING(30)
+    # verbosity goes down to INFO(10); quiteness up to CRITICAL(50)
     logger.setLevel(10 * max((3 - args.verbosity + args.quietness), 1))
 
     return args
