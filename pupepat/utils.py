@@ -135,7 +135,7 @@ def save_results(input_filename: str, best_fit_models: list,
     return output_table
 
 
-def source_is_valid(data, s):
+def source_is_valid(data, source):
     """
     Validate source as reasonable. Checks:
     1. bad columns in image
@@ -150,22 +150,22 @@ def source_is_valid(data, s):
     """
     bad_column_max = config['source_filters']['bad_column_max']
     bad_column_min = config['source_filters']['bad_column_min']
-    got_bad_columns = (((s['xmax'] - s['xmin']) < bad_column_min and (s['ymax'] - s['ymin']) > bad_column_max) or
-                       ((s['xmax'] - s['xmin']) > bad_column_max and (s['ymax'] - s['ymin']) < bad_column_min))
+    got_bad_columns = (((source['xmax'] - source['xmin']) < bad_column_min and (source['ymax'] - source['ymin']) > bad_column_max) or
+                       ((source['xmax'] - source['xmin']) > bad_column_max and (source['ymax'] - source['ymin']) < bad_column_min))
 
     focus_scale_factor = config['source_filters']['focus_scale_factor']
     background = np.median(data)
-    in_focus = np.abs(data[int(s['y']), int(s['x'])] - background) > focus_scale_factor * np.sqrt(background)
+    in_focus = np.abs(data[int(source['y']), int(source['x'])] - background) > focus_scale_factor * np.sqrt(background)
 
     edge_limit = config['source_filters']['edge_proximity_limit']
-    too_close_to_edge = s['x'] - edge_limit < 0 or s['y'] - edge_limit < 0
-    too_close_to_edge |= s['x'] + edge_limit > data.shape[1] or s['y'] + edge_limit > data.shape[0]
+    too_close_to_edge = source['x'] - edge_limit < 0 or source['y'] - edge_limit < 0
+    too_close_to_edge |= source['x'] + edge_limit > data.shape[1] or source['y'] + edge_limit > data.shape[0]
 
     ellipticity_limit = config['source_filters']['ellipticity_limit']
-    not_a_circle = (max((s['a']/s['b']), (s['a']/s['b'])) > ellipticity_limit)
+    not_a_circle = (max((source['a']/source['b']), (source['a']/source['b'])) > ellipticity_limit)
 
     if got_bad_columns or in_focus or too_close_to_edge or not_a_circle:
-        msg = 'Filtered source at ({x:0.2f},{y:0.2f})'.format(x=s['x'], y=s['y'])
+        msg = 'Filtered source at ({x:0.2f},{y:0.2f})'.format(x=source['x'], y=source['y'])
         if got_bad_columns:
             error_message = 'Not enough columns.'
         elif in_focus:
@@ -177,7 +177,7 @@ def source_is_valid(data, s):
         logger.warn('{msg}: {err}'.format(msg=msg, err=error_message))
     else:
         logger.info('Source at ({x:0.2f}, {y:0.2f}. A, B: ({a:0.2f}, {b:0.2f})'\
-                    .format(x=s['x'], y=s['y'], a=s['a'], b=s['b']))
+                    .format(x=source['x'], y=source['y'], a=source['a'], b=source['b']))
 
     return not (got_bad_columns or in_focus or too_close_to_edge or not_a_circle)
 
