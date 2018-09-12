@@ -75,6 +75,8 @@ value in the "hole" of the donut, one brightness for the pupil plate and
 that form the boundaries of the pupil plate are also allowed to vary. 
 There is code in this repo to fit ellipses instead of circles and to fit
 brightness gradient across the donut, but they are currently disabled.
+Furthermore, non-circular sources are filtered based upon ellipticity if
+the A/B-axis ratio (as reported by `sep.extract`) exceeds 1.15.
 
 The results are saved in the output directory specified by the user at runtime.
 Each star in each image that is fit as a pupil plate produces a pdf file
@@ -212,7 +214,7 @@ Note that the `--output-table` flag needs an extension (e.g. `.dat` or `.txt`),
 but the `--output-plot` flag does not. It automatically makes pdf files. 
 This difference is because each focus position produces a separate plot.
 The `--proposal-id` flag can be used to set which proposal took the pupil plate images. 
-The default is LCOEngineering.
+The default is to not filter on proposal id and process all images.
 
 The real-time analysis has identical arguments, but is run as
 ```
