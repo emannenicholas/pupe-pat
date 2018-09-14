@@ -12,7 +12,6 @@ February 2018
 from astropy.modeling import custom_model
 import numpy as np
 from astropy.io import fits
-import astroscrappy
 
 from pupepat.ellipse import inside_ellipse
 from pupepat.utils import make_cutout, cutout_coordinates, run_sep, config
@@ -121,10 +120,6 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     cutout = make_cutout(data, source['x'], source['y'], cutout_radius)
     x0 = y0 = cutout_radius + 1.0
     r = cutout_coordinates(cutout, x0, y0)
-
-    # repair any hot pixels and/or cosmic rays from the cutout
-    # TODO: evaluate if this could be done even more beneficial earlier in the pipeline on the whole image...)
-    hpcr_mask, cutout = astroscrappy.detect_cosmics(cutout, readnoise=10., gain=1.0, sigclip=6, sigfrac=1.0)
 
     background = np.median(data)
     if cutout_has_multiple_sources(data, cutout, header, background):
