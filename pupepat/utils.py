@@ -85,8 +85,8 @@ def get_bias_corrected_data_in_electrons(hdu):
     read_noise_e = float(hdu[0].header['RDNOISE']) # e-/pixel
     data_e = gain * hdu[0].data                    # counts to electrons
 
-    # repair any hot pixels and/or cosmic rays
-    hpcr_mask, data_e = astroscrappy.detect_cosmics(data_e, readnoise=read_noise_e, gain=gain,
+    # repair any hot pixels and/or cosmic rays (gain=1.0 b/c we're already in units of electrons)
+    hpcr_mask, data_e = astroscrappy.detect_cosmics(data_e, readnoise=read_noise_e, gain=1.0,
                                                     sigclip=6, sigfrac=0.5)
 
     # 1.48 here goes from median absolute deviation to standard deviation
