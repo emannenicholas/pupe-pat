@@ -215,7 +215,7 @@ def run_sep(data, header, background_mask_threshold=None):
                                 bw=bg_box_size, bh=bg_box_size)
 
     read_noise_e = float(header['RDNOISE'])
-    extract_err = np.sqrt(data + read_noise_e**2.0)
+    extract_err = np.sqrt(data + read_noise_e ** 2.0)
     return sep.extract(data - background, extract_SN_threshold,
                        err=extract_err, minarea=min_area, deblend_cont=1.0, filter_kernel=None)
 

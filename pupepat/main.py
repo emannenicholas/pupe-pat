@@ -63,9 +63,9 @@ def parse_args():
     # verbose and quiet are mutually exclusive
     logging_group = parser.add_mutually_exclusive_group()
     logging_group.add_argument('-v', '--verbose', action='count', default=0, dest='verbosity',
-                          help='Verbosity/Log Level. Repeatable: -v=show info; -vv=show debug')
+                               help='Verbosity/Log Level. Repeatable: -v=show info; -vv=show debug')
     logging_group.add_argument('-q', '--quiet', action='count', default=0, dest='quietness',
-                          help='Quietness/Log Level. Repeatable: -q=no warnings; -qq=no errors')
+                               help='Quietness/Log Level. Repeatable: -q=no warnings; -qq=no errors')
 
     args = parser.parse_args()
 
