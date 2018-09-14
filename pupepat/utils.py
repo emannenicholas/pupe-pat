@@ -48,8 +48,10 @@ config = {
     },
 }
 
-def update_mapping(dest, source):
-    """Update dest dictionary with key,value pairs from source dictionary.
+def update_config_from_user_yaml(dest, source):
+    """Return the config dictionary with values updated from the user supplied yaml file.
+
+    Generically, update dest dictionary with key,value pairs from source dictionary.
     """
     for key, value in source.items():
         if isinstance(value, collections.Mapping):

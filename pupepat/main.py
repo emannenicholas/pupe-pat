@@ -39,7 +39,7 @@ import yaml
 
 from pupepat.quiver import make_quiver_plot
 from pupepat.fitting import fit_defocused_image
-from pupepat.utils import save_results, merge_pdfs, should_process_image, config, update_mapping
+from pupepat.utils import save_results, merge_pdfs, should_process_image, config, update_config_from_user_yaml
 import tempfile
 
 
@@ -83,7 +83,7 @@ def handle_config(output_dir, config_filename):
     if config_filename is not None:
         with open(args.config_filename, "r") as yaml_file:
             custom_config = yaml.load(yaml_file)
-            update_mapping(config, custom_config)
+            update_config_from_user_yaml(config, custom_config)
             logger.debug('updated config:\n{cfg}'.format(cfg=pprint.pformat(config)))
         config_dump_filename = os.path.basename(config_filename)
     else:
