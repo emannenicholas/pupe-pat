@@ -32,7 +32,7 @@ logger = logging.getLogger('pupepat')
 config = {
     'SEP': {
         'extract_SN_threshold': 10.0,
-        'mask_threshold_scale_factor': 10.0,
+        'background_mask_threshold_scale_factor': 10.0,
         'min_area': 2000,
         'bg_box_size': 128,
     },
@@ -193,11 +193,11 @@ def cutout_coordinates(cutout, x0, y0):
     return np.sqrt((x - x0) ** 2.0 + (y - y0) ** 2.0)
 
 
-def run_sep(data, header, mask_threshold=None):
+def run_sep(data, header, background_mask_threshold=None):
     """Compute mask, background, err; then sep.extract sources.
     """
     extract_SN_threshold = config['SEP']['extract_SN_threshold']
-    mask_threshold_scale_factor = config['SEP']['mask_threshold_scale_factor']
+    background_mask_threshold_scale_factor = config['SEP']['background_mask_threshold_scale_factor']
     bg_box_size = config['SEP']['bg_box_size']
     min_area = config['SEP']['min_area']
 
@@ -205,11 +205,11 @@ def run_sep(data, header, mask_threshold=None):
     # So, set the number of source pixels to be 10% of the total (default=300000 pixels)
     sep.set_extract_pixstack(max(300000, int(data.size * 0.1)))
 
-    if mask_threshold is None:
-        mask_threshold = mask_threshold_scale_factor * np.sqrt(np.median(data)) + np.median(data)
+    if background_mask_threshold is None:
+        background_mask_threshold = background_mask_threshold_scale_factor * np.sqrt(np.median(data)) + np.median(data)
 
     background = sep.Background(np.ascontiguousarray(data),
-                                mask=np.ascontiguousarray(data > mask_threshold),
+                                mask=np.ascontiguousarray(data > background_mask_threshold),
                                 bw=bg_box_size, bh=bg_box_size)
 
     read_noise_e = float(header['RDNOISE'])

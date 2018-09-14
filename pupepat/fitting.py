@@ -83,7 +83,7 @@ def fit_defocused_image(filename, plot_basename):
 
 def cutout_has_multiple_sources(data, cutout, header, background):
     # Run sep again and make sure there is only one source in the cutout
-    cutout_sources = run_sep(cutout, header, mask_threshold=25.0 * np.sqrt(background) + background)
+    cutout_sources = run_sep(cutout, header, background_mask_threshold=25.0 * np.sqrt(background) + background)
 
     if len(cutout_sources) > 1:
         logger.error('Too many sources detected in cutout. Likely source crowding.',
