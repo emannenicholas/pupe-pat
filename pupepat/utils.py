@@ -68,7 +68,9 @@ def offsets(x1, y1, x2, y2):
 def get_bias_corrected_data_in_electrons(hdu):
     """
     Estimate the bias level of image and substract it from the image.
-    If bias estimate is negative, issue warning and scale data.
+    If bias estimate is negative, this means that the GAIN in the fits HDU is wrong.
+    In this case, issue a warning and re-scale data after calculating what the gain
+    should have been.
 
     Uses median_absolute_deviation (MAD) to compute standard deviation.
     Note: does not substract background from data to compute noise, as was done
@@ -87,9 +89,10 @@ def get_bias_corrected_data_in_electrons(hdu):
 
     estimated_bias_level_in_electrons = np.median(data_e) - noise_e * noise_e + read_noise_e * read_noise_e
 
-    # If the bias is negative, there's something wrong.
+    # If the bias is negative, that means the GAIN is probably wrong in the HDU
     # Scaling the data here is a work-around for that.
     if estimated_bias_level_in_electrons < 0:
+        # here, we're really figuring about what the gain should have been and re-scaling the data
         noise_e = 1.48 * median_absolute_deviation(data_e)
         sqrt_median_e = np.sqrt(np.median(data_e))
         scale_factor = sqrt_median_e / noise_e
