@@ -10,7 +10,6 @@ License
 February 2018
 """
 from astropy.stats import median_absolute_deviation
-import astroscrappy
 import numpy as np
 from astropy.table import Table
 from astropy.io import fits, ascii
@@ -84,10 +83,6 @@ def get_bias_corrected_data_in_electrons(hdu):
     gain = float(hdu[0].header['GAIN'])            # e-/count
     read_noise_e = float(hdu[0].header['RDNOISE']) # e-/pixel
     data_e = gain * hdu[0].data                    # counts to electrons
-
-    # repair any hot pixels and/or cosmic rays (gain=1.0 b/c we're already in units of electrons)
-    hpcr_mask, data_e = astroscrappy.detect_cosmics(data_e, readnoise=read_noise_e, gain=1.0,
-                                                    sigclip=6, sigfrac=0.5)
 
     # 1.48 here goes from median absolute deviation to standard deviation
     noise_e = 1.48 * median_absolute_deviation(data_e)

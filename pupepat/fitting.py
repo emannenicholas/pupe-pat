@@ -12,7 +12,7 @@ February 2018
 from astropy.modeling import custom_model
 import numpy as np
 from astropy.io import fits
-
+import astroscrappy
 from pupepat.ellipse import inside_ellipse
 from pupepat.utils import make_cutout, cutout_coordinates, run_sep, config
 from pupepat.utils import get_bias_corrected_data_in_electrons, source_is_valid
@@ -69,6 +69,10 @@ def fit_defocused_image(filename, plot_basename):
     logger.info('Extracting sources', extra={'tags': {'filename': os.path.basename(filename)}})
     hdu = fits.open(filename)
     data = get_bias_corrected_data_in_electrons(hdu)
+
+    # repair any hot pixels and/or cosmic rays (gain=1.0 b/c we're already in units of electrons)
+    hpcr_mask, data = astroscrappy.detect_cosmics(data, readnoise=hdu[0].header['RDNOISE'], gain=1.0,
+                                                  sigclip=6.0, sigfrac=0.25, objlim=8.0)
 
     sources = run_sep(data, hdu[0].header)
     logger.info('Found {num_s} sources'.format(num_s=len(sources)),
