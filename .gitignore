@@ -6,6 +6,12 @@ __pycache__/
 # C extensions
 *.so
 
+#
+# An example yaml file is under VC, but we don't want specific
+# config.yaml file to be tracked
+#
+*.yaml
+
 # Distribution / packaging
 .Python
 env/
@@ -102,3 +108,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# emacs drit
+*~

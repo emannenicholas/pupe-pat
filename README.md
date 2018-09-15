@@ -75,6 +75,8 @@ value in the "hole" of the donut, one brightness for the pupil plate and
 that form the boundaries of the pupil plate are also allowed to vary. 
 There is code in this repo to fit ellipses instead of circles and to fit
 brightness gradient across the donut, but they are currently disabled.
+Furthermore, non-circular sources are filtered based upon ellipticity if
+the A/B-axis ratio (as reported by `sep.extract`) exceeds 1.15.
 
 The results are saved in the output directory specified by the user at runtime.
 Each star in each image that is fit as a pupil plate produces a pdf file
@@ -87,11 +89,13 @@ and direction of the offset of the centers of the inner and outer edges of
 the pupil plate. The "best" M2 tip and tilt are marked with a red X.
 
 The code can be run in two modes (see below): real-time and offline modes.
-The offline mode will analyze all images in a given directory that are 
-taken by the LCOEngineering proposal (default), that are EXPOSE or EXPERIMENTAL
-obstypes, and are defocused (FOCDMD != 0.0). To ensure that the proposal
-is correctly included in the header, the Sequencer should be set to manual
-when taking the images.
+The offline mode will analyze all images in a given directory
+that are EXPOSE or EXPERIMENTAL obstypes, and are defocused (FOCDMD != 0.0).
+By default, `PROPOSAL_ID` is not used to filter images. However, the
+`--proposal-id PROPOSAL_ID` argument may be specified on the command line
+to analyze only those images that are taken by the specified `PROPOSAL_ID`.
+To ensure that the proposal is correctly included in the header, the Sequencer
+should be set to manual when taking the images.
 
 The real-time mode has the same criteria for which images to analyze, but
 watches the input directory for new files. Right before an M2 tip/tilt run,
@@ -210,7 +214,7 @@ Note that the `--output-table` flag needs an extension (e.g. `.dat` or `.txt`),
 but the `--output-plot` flag does not. It automatically makes pdf files. 
 This difference is because each focus position produces a separate plot.
 The `--proposal-id` flag can be used to set which proposal took the pupil plate images. 
-The default is LCOEngineering.
+The default is to not filter on proposal id and process all images.
 
 The real-time analysis has identical arguments, but is run as
 ```

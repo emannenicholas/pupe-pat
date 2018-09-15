@@ -13,6 +13,7 @@ from astropy.stats import median_absolute_deviation
 import numpy as np
 from astropy.table import Table
 from astropy.io import fits, ascii
+import collections
 import os
 import sep
 import logging
@@ -20,25 +21,89 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 
 logger = logging.getLogger('pupepat')
 
+#
+# configuraton for everything: image filter, cutout, solver guesses, etc.
+# this dictionary holds the default values. if --config-file is specified,
+# that file is read and this dict is updated. It's written to the --output-dir
+# as yaml file
+#
+# guess for the size of a defocused donut is 0.387" 4 FOCDMD
+#
+config = {
+    'SEP': {
+        'extract_SN_threshold': 10.0,
+        'background_mask_threshold_scale_factor': 10.0,
+        'min_area': 2000,
+        'bg_box_size': 128,
+    },
+    'cutout': {
+        'cutout_radius': 150,
+        'cutout_padding': 0.2 # percent additional margin added to each edge
+    },
+    'source_filters': {'bad_column_max': 400.0,
+                       'bad_column_min': 200.0,
+                       'edge_proximity_limit': 150.0,
+                       'focus_scale_factor': 200.0,
+                       'ellipticity_limit': 1.15,
+    },
+}
+
+def update_config_from_user_yaml(dest, source):
+    """Return the config dictionary with values updated from the user supplied yaml file.
+
+    Generically, update dest dictionary with key,value pairs from source dictionary.
+    """
+    for key, value in source.items():
+        if isinstance(value, collections.Mapping):
+            dest[key] = update_mapping(dest.get(key, {}), value)
+        else:
+            dest[key] = value
+    return dest
+
 
 def offsets(x1, y1, x2, y2):
     return ((x2 - x1) ** 2.0 + (y2 - y1) ** 2.0) ** 0.5
 
 
-def estimate_bias_level(hdu):
+def get_bias_corrected_data_in_electrons(hdu):
     """
-    Estimate the bias level of image
+    Estimate the bias level of image and substract it from the image.
+    If bias estimate is negative, this means that the GAIN in the fits HDU is wrong.
+    In this case, issue a warning and re-scale data after calculating what the gain
+    should have been.
+
+    Uses median_absolute_deviation (MAD) to compute standard deviation.
+    Note: does not substract background from data to compute noise, as was done
+    prior to Sept.2018 parameter tuning.
+
     :param hdu: fits hdu with the image in question
 
-    :return: float bias_level
+    :return: np.array data_e
     """
+    gain = float(hdu[0].header['GAIN'])            # e-/count
+    read_noise_e = float(hdu[0].header['RDNOISE']) # e-/pixel
+    data_e = gain * hdu[0].data                    # counts to electrons
+
     # 1.48 here goes from median absolute deviation to standard deviation
-    noise = 1.48 * median_absolute_deviation(hdu[0].data - sep.Background(hdu[0].data.astype(np.float)))
-    gain = float(hdu[0].header['GAIN'])
-    read_noise = float(hdu[0].header['RDNOISE'])
-    bias_level = gain * np.median(hdu[0].data) - gain * gain * noise * noise + read_noise * read_noise
-    bias_level /= gain
-    return bias_level
+    noise_e = 1.48 * median_absolute_deviation(data_e)
+
+    estimated_bias_level_in_electrons = np.median(data_e) - noise_e * noise_e + read_noise_e * read_noise_e
+
+    # If the bias is negative, that means the GAIN is probably wrong in the HDU
+    # Scaling the data here is a work-around for that.
+    if estimated_bias_level_in_electrons < 0:
+        # here, we're really figuring about what the gain should have been and re-scaling the data
+        noise_e = 1.48 * median_absolute_deviation(data_e)
+        sqrt_median_e = np.sqrt(np.median(data_e))
+        scale_factor = sqrt_median_e / noise_e
+        msg = 'Negative bias {b:0.2f}. Scaling data by (sqrt(median)/noise): ({r:0.2f}/{n:0.2f})= {s:0.2f}'
+        logger.warning(msg.format(b=estimated_bias_level_in_electrons, s=scale_factor, r=sqrt_median_e, n=noise_e ))
+        data_e *= scale_factor
+    else:
+        # bias corrected data in electrons
+        data_e -= estimated_bias_level_in_electrons
+
+    return data_e
 
 
 def save_results(input_filename: str, best_fit_models: list,
@@ -68,14 +133,63 @@ def save_results(input_filename: str, best_fit_models: list,
             best_fit_model['filename'] = os.path.basename(input_filename)
             for keyword in header_keywords:
                 best_fit_model[keyword] = hdu[0].header[keyword]
-            logger.info(best_fit_model)
+            logger.debug(best_fit_model)
             output_table.add_row(best_fit_model)
 
     output_table.write(output_filename, format='ascii', overwrite=True)
     return output_table
 
 
+def source_is_valid(data, source):
+    """
+    Validate source as reasonable. Checks:
+    1. bad columns in image
+    2. source is in focus (not a pupil)
+    3. too close to edge of image
+    4. not circular enough
+
+    :param data: image data from which the source was extracted
+    :param s: SEP extracted source
+
+    :return Boolean is_valid
+    """
+    bad_column_max = config['source_filters']['bad_column_max']
+    bad_column_min = config['source_filters']['bad_column_min']
+    got_bad_columns = (((source['xmax'] - source['xmin']) < bad_column_min and (source['ymax'] - source['ymin']) > bad_column_max) or
+                       ((source['xmax'] - source['xmin']) > bad_column_max and (source['ymax'] - source['ymin']) < bad_column_min))
+
+    focus_scale_factor = config['source_filters']['focus_scale_factor']
+    background = np.median(data)
+    in_focus = np.abs(data[int(source['y']), int(source['x'])] - background) > focus_scale_factor * np.sqrt(background)
+
+    edge_limit = config['source_filters']['edge_proximity_limit']
+    too_close_to_edge = source['x'] - edge_limit < 0 or source['y'] - edge_limit < 0
+    too_close_to_edge |= source['x'] + edge_limit > data.shape[1] or source['y'] + edge_limit > data.shape[0]
+
+    ellipticity_limit = config['source_filters']['ellipticity_limit']
+    not_a_circle = (max((source['a']/source['b']), (source['a']/source['b'])) > ellipticity_limit)
+
+    if got_bad_columns or in_focus or too_close_to_edge or not_a_circle:
+        msg = 'Filtered source at ({x:0.2f},{y:0.2f})'.format(x=source['x'], y=source['y'])
+        if got_bad_columns:
+            error_message = 'Not enough columns.'
+        elif in_focus:
+            error_message = 'Not a donut.'
+        elif too_close_to_edge:
+            error_message = 'Too close to the edge.'
+        elif not_a_circle:
+            error_message = 'Not a circular source.'
+        logger.warn('{msg}: {err}'.format(msg=msg, err=error_message))
+    else:
+        logger.info('Source at ({x:0.2f}, {y:0.2f}. A, B: ({a:0.2f}, {b:0.2f})'\
+                    .format(x=source['x'], y=source['y'], a=source['a'], b=source['b']))
+
+    return not (got_bad_columns or in_focus or too_close_to_edge or not_a_circle)
+
+
 def make_cutout(data, x0, y0, r):
+    """Slice the data array centered on (x0,y0) from -r to r+1 in both dimensions.
+    """
     return data[int(y0 - r):int(y0 + r + 1), int(x0 - r):int(x0 + r + 1)]
 
 
@@ -84,11 +198,29 @@ def cutout_coordinates(cutout, x0, y0):
     return np.sqrt((x - x0) ** 2.0 + (y - y0) ** 2.0)
 
 
-def run_sep(data, mask_threshold=None):
-    if mask_threshold is None:
-        mask_threshold = 20.0 * np.sqrt(np.median(data)) + np.median(data)
-    background = sep.Background(np.ascontiguousarray(data), mask=np.ascontiguousarray(data > mask_threshold))
-    return sep.extract(data - background, 20.0, err=np.sqrt(data), minarea=1000, deblend_cont=1.0, filter_kernel=None)
+def run_sep(data, header, background_mask_threshold=None):
+    """Compute mask, background, err; then sep.extract sources.
+    """
+    extract_SN_threshold = config['SEP']['extract_SN_threshold']
+    background_mask_threshold_scale_factor = config['SEP']['background_mask_threshold_scale_factor']
+    bg_box_size = config['SEP']['bg_box_size']
+    min_area = config['SEP']['min_area']
+
+    # Pupils cover more pixels than point sources.
+    # So, set the number of source pixels to be 10% of the total (default=300000 pixels)
+    sep.set_extract_pixstack(max(300000, int(data.size * 0.1)))
+
+    if background_mask_threshold is None:
+        background_mask_threshold = background_mask_threshold_scale_factor * np.sqrt(np.median(data)) + np.median(data)
+
+    background = sep.Background(np.ascontiguousarray(data),
+                                mask=np.ascontiguousarray(data > background_mask_threshold),
+                                bw=bg_box_size, bh=bg_box_size)
+
+    read_noise_e = float(header['RDNOISE'])
+    extract_err = np.sqrt(data + read_noise_e ** 2.0)
+    return sep.extract(data - background, extract_SN_threshold,
+                       err=extract_err, minarea=min_area, deblend_cont=1.0, filter_kernel=None)
 
 
 def prettify_focdmd(demanded_focus):
@@ -184,13 +316,14 @@ def is_unstitched(hdu):
     return sci_extension_counter > 1
 
 
-def should_process_image(path, proposal_id='LCOEngineering'):
+def should_process_image(path, proposal_id=None):
     """
     Test if we should try to process a given image.
 
     We assume that all images of interest will be defocused (abs(FOCDMD) > 0) and either an experimental or
-    exposure obstype. We only consider images taken with the given proposal id. If the frame is from a Sinistro, we
-    only consider frames that are already stitched.
+    exposure obstype. If a proposal_id is supplied, we only consider images taken with the given proposal id.
+    The default is to not filter on propsal_id (i.e. proposal_id is None).
+    If the frame is from a Sinistro, we only consider frames that are already stitched.
 
     :param path: Full path to the image of interest
     :param proposal_id: Proposal ID for images to process
@@ -206,6 +339,6 @@ def should_process_image(path, proposal_id='LCOEngineering'):
 
     header = hdu[primary_extension].header
     should_process = np.abs(header.get('FOCDMD', 0.0)) > 0.0
-    should_process &= header.get('PROPID') == proposal_id
+    should_process &= proposal_id is None or header.get('PROPID') == proposal_id
     should_process &= header.get('OBSTYPE') == 'EXPOSE' or header.get('OBSTYPE') == 'EXPERIMENTAL'
     return should_process

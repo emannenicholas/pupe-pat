@@ -1,0 +1,23 @@
+#
+# PUPE-PAT Solver Configuration - example yaml file
+#
+# (If no configuration file is given, default values are supplied for all parameters,
+# and these are written to <output-dir>pupe-pat-config.yaml.out).
+#
+
+SEP:
+  extract_SN_threshold: 10.0
+  background_mask_threshold_scale_factor: 10.0
+  min_area: 2000
+  bg_box_size: 128
+
+cutout:
+  cutout_radius: 150
+  cutout_padding: 0.2
+
+source_filters:
+  bad_column_min: 200
+  bad_column_max: 400  
+  edge_proximity_limit: 150
+  focus_scale_factor: 200
+  ellipticity_limit: 1.15

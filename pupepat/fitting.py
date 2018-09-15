@@ -12,9 +12,10 @@ February 2018
 from astropy.modeling import custom_model
 import numpy as np
 from astropy.io import fits
-
+import astroscrappy
 from pupepat.ellipse import inside_ellipse
-from pupepat.utils import estimate_bias_level, make_cutout, cutout_coordinates, run_sep
+from pupepat.utils import make_cutout, cutout_coordinates, run_sep, config
+from pupepat.utils import get_bias_corrected_data_in_electrons, source_is_valid
 from pupepat.plot import plot_best_fit_ellipse
 from astropy.modeling import fitting
 import os
@@ -67,37 +68,52 @@ def elliptical_annulus(x, y, x0_inner=0.0, y0_inner=0.0, a_inner=1.0, b_inner=1.
 def fit_defocused_image(filename, plot_basename):
     logger.info('Extracting sources', extra={'tags': {'filename': os.path.basename(filename)}})
     hdu = fits.open(filename)
-    data = float(hdu[0].header['GAIN']) * (hdu[0].data - estimate_bias_level(hdu))
-    sources = run_sep(data)
+    data = get_bias_corrected_data_in_electrons(hdu)
+
+    # repair any hot pixels and/or cosmic rays (gain=1.0 b/c we're already in units of electrons)
+    hpcr_mask, data = astroscrappy.detect_cosmics(data, readnoise=hdu[0].header['RDNOISE'], gain=1.0,
+                                                  sigclip=6.0, sigfrac=0.25, objlim=8.0)
+
+    sources = run_sep(data, hdu[0].header)
+    logger.info('Found {num_s} sources'.format(num_s=len(sources)),
+                extra= {'tags': {'filename': os.path.basename(filename)}})
+
     best_fit_models = [fit_cutout(data, source, plot_basename, os.path.basename(filename),
                                   hdu[0].header, i)
                        for i, source in enumerate(sources)]
     return best_fit_models
 
 
+def cutout_has_multiple_sources(data, cutout, header, background):
+    # Run sep again and make sure there is only one source in the cutout
+    cutout_sources = run_sep(cutout, header, background_mask_threshold=25.0 * np.sqrt(background) + background)
+
+    if len(cutout_sources) > 1:
+        logger.error('Too many sources detected in cutout. Likely source crowding.',
+                     extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
+
+    return len(cutout_sources) > 1
+
+
 def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circle=True, fit_gradient=False):
+    logger.debug('Validating source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
+    if not source_is_valid(data, source):
+        return
     logger.info('Fitting source', extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
 
-    background = np.median(data)
+    cutout_radius = config['cutout']['cutout_radius']
+    # backed out this change because it needs more testing
+    #cutout_padding = config['cutout']['cutout_padding']
+    #pad = cutout_padding * max((source['ymax']-source['ymin']), (source['xmax']-source['xmin']))
+    #cutout = data[int(source['ymin']-pad):int(source['ymax']+pad),
+    #              int(source['xmin']-pad):int(source['xmax']+pad)]
+    cutout = make_cutout(data, source['x'], source['y'], cutout_radius)
+    r = cutout_coordinates(cutout, cutout_radius + 1, cutout_radius + 1)
 
-    # Short circuit if either the source is in focus or if we just picked up a couple of hot columns
-    got_bad_columns = (source['xmax'] - source['xmin']) < 200 and (source['ymax'] - source['ymin']) > 400
-    got_bad_columns |= (source['xmax'] - source['xmin']) > 400 and (source['ymax'] - source['ymin']) < 200
-    in_focus = np.abs(data[int(source['y']), int(source['x'])] - background) > 200.0 * np.sqrt(background)
-    too_close_to_edge = source['x'] - 150 < 0 or source['y'] - 150 < 0
-    too_close_to_edge |= source['x'] + 150 > data.shape[1] or source['y'] + 150 > data.shape[0]
-    if got_bad_columns or in_focus or too_close_to_edge:
-        if got_bad_columns:
-            error_message = 'Star did not have enough columns. Likely an artifact'
-        elif in_focus:
-            error_message = 'Star was not a donut.'
-        elif too_close_to_edge:
-            error_message = 'Star was too close to the edge of the image.'
-        logger.error(error_message, extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
-        return
-
-    cutout = make_cutout(data, source['x'], source['y'], 150)
-    r = cutout_coordinates(cutout, 151, 151)
+    # backed out this change because it needs more testing
+    ##inner_radius_guess = 3.4 * np.abs(header['FOCDMD']) # Rob Siverd, personal communiation
+    ##outer_radius_guess = 3.0 * inner_radius_guess \
+    ##                     if header['FOCDMD'] > 0 else 2.25 * inner_radius_guess
 
     inner_brightness_guess = np.median(cutout[r < 5])
     inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + inner_brightness_guess)
@@ -109,12 +125,8 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     x0 = y0 = cutout_radius + 1.0
     r = cutout_coordinates(cutout, x0, y0)
 
-    # Run sep again and make sure there is only one source in the cutout
-    cutout_sources = run_sep(cutout, mask_threshold=25.0 * np.sqrt(background) + background)
-
-    if len(cutout_sources) > 1:
-        logger.error('Too many sources detected in cutout. Likely source crowding.',
-                     extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
+    background = np.median(data)
+    if cutout_has_multiple_sources(data, cutout, header, background):
         return
 
     inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + background)
@@ -151,8 +163,8 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     for keyword in ['xmin', 'xmax', 'ymin', 'ymax']:
         logging_tags[keyword] = float(source[keyword])
 
-    logger.info('Best fit parameters for PUPE-PAT model',
-                extra={'tags': logging_tags})
+    logger.debug('Best fit parameters for PUPE-PAT model',
+                 extra={'tags': logging_tags})
 
     fit_results = {param: getattr(best_fit_model, param).value for param in best_fit_model.param_names}
     fit_results['x0_centroid'], fit_results['y0_centroid'] = x0, y0

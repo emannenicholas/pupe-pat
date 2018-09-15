@@ -34,24 +34,74 @@ from watchdog.events import FileSystemEventHandler
 from glob import glob
 import argparse
 import os
+import pprint
+import yaml
 
 from pupepat.quiver import make_quiver_plot
 from pupepat.fitting import fit_defocused_image
-from pupepat.utils import save_results, merge_pdfs, should_process_image
+from pupepat.utils import save_results, merge_pdfs, should_process_image, config, update_config_from_user_yaml
 import tempfile
 
 
-def run_watcher():
+def parse_args():
     parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--input-dir', dest='input_dir', required=True, help='Input directory where the new files will appear.')
-    parser.add_argument('--output-dir', dest='output_dir', required=True, help='Directory to store output files.')
-    parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat', help='Filename of the table of fit results.')
+    
+    parser.add_argument('--input-dir', dest='input_dir', required=True,
+                        help='Input directory where the new files will appear.')
+    parser.add_argument('--output-dir', dest='output_dir', required=True,
+                        help='Directory to store output files.')
+    parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat',
+                        help='Filename of the table of fit results.')
     parser.add_argument('--output-plot', dest='output_plot', default='pupe-pat',
                         help='Filename of the quiver plot of fit results.')
-    parser.add_argument('--proposal-id', dest='proposal_id', default='LCOEngineering',
+    parser.add_argument('--proposal-id', dest='proposal_id', default=None,
                         help='Proposal ID used to take the pupil plate images')
+    parser.add_argument('--config-file', dest='config_filename', default=None,
+                        help='Filename of configuration YAML. See config.yaml.example, for example.')
+
+    # verbose and quiet are mutually exclusive
+    logging_group = parser.add_mutually_exclusive_group()
+    logging_group.add_argument('-v', '--verbose', action='count', default=0, dest='verbosity',
+                               help='Verbosity/Log Level. Repeatable: -v=show info; -vv=show debug')
+    logging_group.add_argument('-q', '--quiet', action='count', default=0, dest='quietness',
+                               help='Quietness/Log Level. Repeatable: -q=no warnings; -qq=no errors')
+
     args = parser.parse_args()
+
+    # default is logging.WARNING(30)
+    # verbosity goes down to INFO(10); quiteness up to CRITICAL(50)
+    logger.setLevel(10 * max((3 - args.verbosity + args.quietness), 1))
+
+    return args
+
+
+def handle_config(output_dir, config_filename):
+    """Update the Configuration dictionary (utils.config) and write it to output-dir
+    """
+    # update utils.config dict with custom values if supplied
+    if config_filename is not None:
+        with open(args.config_filename, "r") as yaml_file:
+            custom_config = yaml.load(yaml_file)
+            update_config_from_user_yaml(config, custom_config)
+            logger.debug('updated config:\n{cfg}'.format(cfg=pprint.pformat(config)))
+        config_dump_filename = os.path.basename(config_filename)
+    else:
+        config_dump_filename = 'pupe-pat-default-config.yaml'
+
+    # custom config or not, dump the config to output-dir
+    try:
+        with open(os.path.join(output_dir, config_dump_filename), 'w') as output_file:
+            yaml.dump(config, output_file, default_flow_style=False)
+    except PermissionError as e:
+        logger.error('Check write permissions of output directory: {d}\n{err}'.format(d=args.output_dir, err=e))
+        sys.exit(1)
+
+
+def run_watcher():
+    args = parse_args()
+    handle_config(args.output_dir, args.config_filename)
+    
     observer = Observer()
     observer.schedule(Handler(args.output_dir, args.output_table, args.proposal_id), args.input_dir, recursive=True)
     observer.start()
@@ -68,19 +118,15 @@ def run_watcher():
 
 
 def analyze_directory():
-    parser = argparse.ArgumentParser(description='Run the PUPE-PAT analysis on a directory',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--input-dir', dest='input_dir', required=True, help='Input directory where the new files will appear.')
-    parser.add_argument('--output-dir', dest='output_dir', required=True, help='Directory to store output files.')
-    parser.add_argument('--output-table', dest='output_table', default='pupe-pat.dat', help='Filename of the table of fit results.')
-    parser.add_argument('--output-plot', dest='output_plot', default='pupe-pat',
-                        help='Filename of the quiver plot of fit results.')
-    parser.add_argument('--proposal-id', dest='proposal_id', default='LCOEngineering',
-                        help='Proposal ID used to take the pupil plate images')
+    args = parse_args()
+    handle_config(args.output_dir, args.config_filename)
 
-    args = parser.parse_args()
     images_to_analyze = [image for image in glob(os.path.join(args.input_dir, '*fits*'))
                          if should_process_image(image, args.proposal_id)]
+
+    if len(images_to_analyze) == 0:
+        logger.error('No images to analyze in directory: {d}'.format(d=args.input_dir))
+        sys.exit(1)
 
     output_table = None
     for image_filename in images_to_analyze:
