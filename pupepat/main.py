@@ -94,7 +94,7 @@ def handle_config(output_dir, config_filename):
         with open(os.path.join(output_dir, config_dump_filename), 'w') as output_file:
             yaml.dump(config, output_file, default_flow_style=False)
     except PermissionError as e:
-        logger.error('Check write permissions of output directory: {d}\n{err}'.format(d=args.output_dir, err=e))
+        logger.error('Check write permissions of output directory: {d}\n{err}'.format(d=output_dir, err=e))
         sys.exit(1)
 
 
