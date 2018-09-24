@@ -24,7 +24,7 @@ pipeline {
 		stage('Push image') {
 			steps {
 				script {
-					dockerImage.push("${GIT_DESCRIPTION}")
+					dockerImage.push()
 				}
 			}
 		}
