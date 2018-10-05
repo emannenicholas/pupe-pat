@@ -81,7 +81,7 @@ def handle_config(output_dir, config_filename):
     """
     # update utils.config dict with custom values if supplied
     if config_filename is not None:
-        with open(args.config_filename, "r") as yaml_file:
+        with open(config_filename, "r") as yaml_file:
             custom_config = yaml.load(yaml_file)
             update_config_from_user_yaml(config, custom_config)
             logger.debug('updated config:\n{cfg}'.format(cfg=pprint.pformat(config)))
