@@ -1,0 +1,14 @@
+
+# Python Virtual Env stuff
+venv
+*.pyc
+
+# JetBrains IDE stuff to ignore
+.idea
+
+# emacs backup files
+*~
+
+# Jupyter Notebook stuff
+.ipynb*
+
