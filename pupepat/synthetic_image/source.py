@@ -36,7 +36,7 @@ class PointSource(Source):
     def __init__(self, radius, counts, x=None, y=None):
         self.radius = radius
         self.counts = counts
-        super().__init__(x, y)
+        super().__init__(x=x, y=y)
 
         self.half_width = radius  # same as radius (for PointSource)
 
@@ -47,7 +47,7 @@ class PointSource(Source):
 
     @property
     def decal(self):
-        shape = (2*self.radius + 1, 2*self.radius + 1)
+        shape = (2*self.half_width + 1, 2*self.half_width + 1)
         _decal = np.zeros(shape)
 
         ci, cj = self.half_width, self.half_width  # center of decal
@@ -66,7 +66,7 @@ class CircularPupil(Source):
         self.outer_radius = outer_radius
         self.counts = counts
         self.center_vector = center_vector
-        super().__init__(x, y)
+        super().__init__(x=x, y=y)
 
         # make sure annulus makes sense (validate parameters)
         # inner_radius must not intersect the outer radius.
@@ -83,7 +83,7 @@ class CircularPupil(Source):
 
     @property
     def decal(self):
-        shape = (2*self.outer_radius + 1, 2*self.outer_radius + 1)
+        shape = (2*self.half_width + 1, 2*self.half_width + 1)
         _decal = np.zeros(shape, dtype=np.float_)
 
         ci, cj = self.half_width, self.half_width  # center of decal
@@ -108,7 +108,7 @@ class EllipticalPupil(Source):
                  counts,
                  center_vector=(0, 0),
                  x=None, y=None):
-        super().__init__(x, y)
+        super().__init__(x=x, y=y)
         self.inner_a = inner_a
         self.inner_b = inner_b
         self.inner_phi = inner_phi
@@ -140,22 +140,22 @@ class EllipticalPupil(Source):
         shape = (2*self.half_width + 1, 2*self.half_width + 1)
         _decal = np.zeros(shape, dtype=np.float_)
 
-        ci, cj = self.half_width, self.half_width  # center of decal
+        center_i, center_j = self.half_width, self.half_width  # center of decal
         ix, jx = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]))
 
         # calculate dist of all points (ix, jx) to the decal center (ci, cj)
-        dist = (((np.cos(self.outer_phi)*(ix-ci) +
-                  np.sin(self.outer_phi)*(jx-cj))**2 / self.outer_a**2) +
-                ((np.sin(self.outer_phi)*(ix-ci) -
-                  np.cos(self.outer_phi)*(jx-cj))**2 / self.outer_b**2))
+        dist = self.elliptical_distance_meshgrid(self.outer_a, self.outer_b, self.outer_phi,
+                                                 center_i, center_j, ix, jx)
         _decal[np.where(dist < 1.)] = self.counts  # fill the circle with counts
 
         # remake center and dist array for offset inner_a, -b
-        ci -= self.center_vector[0]
-        cj -= self.center_vector[1]
-        dist = (((np.cos(self.inner_phi)*(ix-ci) +
-                  np.sin(self.inner_phi)*(jx-cj))**2 / self.inner_a**2) +
-                ((np.sin(self.inner_phi)*(ix-ci) -
-                  np.cos(self.inner_phi)*(jx-cj))**2 / self.inner_b**2))
+        center_i -= self.center_vector[0]
+        center_j -= self.center_vector[1]
+        dist = self.elliptical_distance_meshgrid(self.inner_a, self.inner_b, self.inner_phi,
+                                                 center_i, center_j, ix, jx)
         _decal[np.where(dist < 1.)] = 0  # clear the counts with inner_a, _b
         return _decal
+
+    def elliptical_distance_meshgrid(self, a, b, phi, ci, cj, ix, jx):
+        return (((np.cos(phi) * (ix - ci) + np.sin(phi) * (jx - cj)) ** 2 / a ** 2) +
+                ((np.sin(phi) * (ix - ci) - np.cos(phi) * (jx - cj)) ** 2 / b ** 2))
