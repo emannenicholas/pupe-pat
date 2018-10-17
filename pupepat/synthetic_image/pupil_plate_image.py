@@ -3,13 +3,14 @@ from astropy.io import fits
 from pupepat.synthetic_image.source import Source
 
 
+
 class PupilPlateImage:
     def __init__(self, shape=(4096, 4096), seed=42):
         self.shape = shape
         self._random = np.random.RandomState(seed)  # mine
 
         self.sources = []
-        self._cutout_margin_factor = 1.2
+        self.cutout_margin_factor = 1.2
 
         # Default Noise parameters
         self.sky_level = 200.
@@ -59,7 +60,7 @@ class PupilPlateImage:
         # and that those have known properties
         hdu_list = fits.open(filename)
         assert(len(hdu_list) == 1)
-        self.hdu_header = hdu_list[0]
+        self.hdu_primary = hdu_list[0]
         hdu_list.close()
 
     def write_fits_to(self, filename):
@@ -71,14 +72,6 @@ class PupilPlateImage:
         :return:
         """
         fits.writeto(filename, self.render(), fits.Header())
-
-    @property
-    def cutout_margin_factor(self):
-        return self._cutout_margin_factor
-
-    @cutout_margin_factor.setter
-    def cutout_margin_factor(self, value):
-        self._cutout_margin_factor = value
 
     def add_source(self, source, x, y):
         assert isinstance(source, Source)
