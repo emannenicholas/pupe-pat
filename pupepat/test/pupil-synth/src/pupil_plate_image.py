@@ -13,7 +13,7 @@ class PupilPlateImage:
 
         # Default Noise parameters
         self.sky_level = 200.
-        self.read_noise = self.sky_level / 100.
+        self.read_noise = 10.
         self.add_poisson_noise = True
 
     def render(self) -> np.array:
