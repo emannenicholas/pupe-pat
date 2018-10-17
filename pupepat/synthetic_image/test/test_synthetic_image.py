@@ -5,7 +5,7 @@ import sys
 from unittest import TestCase
 
 
-class PupilSynthTestCase(TestCase):
+class SyntheticImageTestCase(TestCase):
     def setUp(self):
         print(self.__class__.__name__ + '::' + self._testMethodName)
 

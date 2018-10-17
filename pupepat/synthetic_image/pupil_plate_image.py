@@ -1,6 +1,6 @@
 import numpy as np
 from astropy.io import fits
-from src.source import Source
+from pupepat.synthetic_image.source import Source
 
 
 class PupilPlateImage:

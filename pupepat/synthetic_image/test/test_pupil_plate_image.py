@@ -2,13 +2,13 @@ import numpy as np
 import tempfile
 from unittest import skip
 
-from test.test_pupil_synth import PupilSynthTestCase
+from pupepat.synthetic_image.test.test_synthetic_image import SyntheticImageTestCase
 
-from src.pupil_plate_image import PupilPlateImage
-from src.source import Source, PointSource, CircularPupil
+from pupepat.synthetic_image.pupil_plate_image import PupilPlateImage
+from pupepat.synthetic_image.source import Source, PointSource, CircularPupil
 
 
-class TestPupilPlateImage(PupilSynthTestCase):
+class TestPupilPlateImage(SyntheticImageTestCase):
     def test___init__(self):
         ppi = PupilPlateImage()  # defaults to (4096, 4096)
         self.assertIsInstance(ppi, PupilPlateImage)
@@ -94,7 +94,7 @@ class TestPupilPlateImage(PupilSynthTestCase):
         self.assertEqual(counts, image[cx, cy], '({x:}, {y:})'.format(x=cx, y=cy))
 
 
-class TestPupilPlateImageCutoutExtraction(PupilSynthTestCase):
+class TestPupilPlateImageCutoutExtraction(SyntheticImageTestCase):
 
     def setUp(self):
         self.ppi = PupilPlateImage(shape=(1024, 1024))
@@ -120,7 +120,7 @@ class TestPupilPlateImageCutoutExtraction(PupilSynthTestCase):
 
 
 #@skip
-class TestPupilPlateImageFileIO(PupilSynthTestCase):
+class TestPupilPlateImageFileIO(SyntheticImageTestCase):
     """It might seem like we're just testing astropy.io.fits here,
     but I think we'll try to write the synthesized pupil parameters
     into the header pretty soon. That prepares us to run a FITS file
@@ -154,7 +154,7 @@ class TestPupilPlateImageFileIO(PupilSynthTestCase):
         pass
 
 
-class TestPoissonMethod(PupilSynthTestCase):
+class TestPoissonMethod(SyntheticImageTestCase):
     def test_poisson_methods(self):
         seed = 1234
         rs1 = np.random.RandomState(seed)

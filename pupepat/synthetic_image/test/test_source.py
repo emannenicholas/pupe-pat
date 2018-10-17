@@ -1,16 +1,16 @@
+
 import numpy as np
-from pupepat.test.pupil-synth.test.test_pupil_synth import PupilSynthTestCase, getsize
+from pupepat.synthetic_image.test.test_synthetic_image import SyntheticImageTestCase, getsize
+from pupepat.synthetic_image.source import Source, PointSource, CircularPupil, EllipticalPupil
 
-from pupepat.test.src.source import Source, PointSource, CircularPupil, EllipticalPupil
 
-
-class TestSource(PupilSynthTestCase):
+class TestSource(SyntheticImageTestCase):
     def test___init__(self):
         # raise TypeError upon instanciation of abc.ABC
         self.assertRaises(TypeError, Source, 0, 0)
 
 
-class TestPointSource(PupilSynthTestCase):
+class TestPointSource(SyntheticImageTestCase):
     def test___init__(self):
         x, y, radius, counts = 0, 0, 10, 100
         ps = PointSource(x, y, radius, counts)
@@ -50,7 +50,7 @@ class TestPointSource(PupilSynthTestCase):
         self.assertEqual(getsize(ps100), getsize(ps1000))
 
 
-class TestCircularPupil(PupilSynthTestCase):
+class TestCircularPupil(SyntheticImageTestCase):
     def test___init__(self):
         x, y, inner_radius, outer_radius, counts = 0, 0, 100, 200, 100
         cp = CircularPupil(inner_radius, outer_radius, counts, x=x, y=y)
@@ -121,7 +121,7 @@ class TestCircularPupil(PupilSynthTestCase):
         self.assertEqual(ps1000_size, getsize(ps1000))
 
 
-class TestEllipticalPupil(PupilSynthTestCase):
+class TestEllipticalPupil(SyntheticImageTestCase):
     def setUp(self):
         self.outer_a = 400
         self.outer_b = 360
