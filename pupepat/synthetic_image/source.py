@@ -11,7 +11,11 @@ class Source(abc.ABC):
         """
         self.x, self.y = x, y
         self.set_position(x, y)
-        self.half_width = 0  # decal.shape[0] = 2*half_width + 1
+
+        # the half_width value is sub-class dependent, but it's reason
+        # for being is to provide a consistent value for the size of the
+        # decal. like this: decal.shape[0] = 2*half_width + 1
+        self.half_width = 0
         super().__init__()
 
     def set_position(self, x, y):
