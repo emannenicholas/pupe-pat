@@ -1,7 +1,7 @@
 import numpy as np
-from test.test_pupil_synth import PupilSynthTestCase, getsize
+from pupepat.test.pupil-synth.test.test_pupil_synth import PupilSynthTestCase, getsize
 
-from src.source import Source, PointSource, CircularPupil, EllipticalPupil
+from pupepat.test.src.source import Source, PointSource, CircularPupil, EllipticalPupil
 
 
 class TestSource(PupilSynthTestCase):

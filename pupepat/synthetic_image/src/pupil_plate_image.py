@@ -25,24 +25,24 @@ class PupilPlateImage:
         """
         image = np.zeros(self.shape, dtype=np.float_)
 
-        # # add the background sky level
+        # add the background sky level
         image += self.sky_level
 
         # add the sources
         for source in self.sources:
             # add (+=) source decal into the appropriate slice of the data
-            a = source.x - source.half_width
-            b = source.y - source.half_width
+            slice_index_x = source.x - source.half_width
+            slice_index_y = source.y - source.half_width
 
             decal = source.decal
-            shape = decal.shape
-            image[a:a + shape[0], b:b + shape[1]] += decal
+            image[slice_index_x:slice_index_x + decal.shape[0],
+                  slice_index_y:slice_index_y + decal.shape[1]] += decal
 
         # add Poisson noise (shot noise)
         if self.add_poisson_noise:
             image = np.float_(self._random.poisson(image))
 
-        # # add read noise
+        # add read noise
         read_noise = self._random.normal(scale=self.read_noise, size=image.size)
         read_noise.shape = image.shape
         image += read_noise

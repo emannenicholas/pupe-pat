@@ -87,6 +87,7 @@ class TestPupilPlateImage(PupilSynthTestCase):
         image = ppi.render()
 
         # check that source is where we placed it
+        # TODO: y should be outer loop, x inner loop....
         for x in range(image.shape[0]):
             for y in range(image.shape[1]):
                 if not ((x == cx) and (y == cy)):
