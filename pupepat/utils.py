@@ -55,7 +55,7 @@ def update_config_from_user_yaml(dest, source):
     """
     for key, value in source.items():
         if isinstance(value, collections.Mapping):
-            dest[key] = update_mapping(dest.get(key, {}), value)
+            dest[key] = update_config_from_user_yaml(dest.get(key, {}), value)
         else:
             dest[key] = value
     return dest
