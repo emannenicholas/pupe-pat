@@ -158,4 +158,4 @@ class EllipticalPupil(Source):
 
     def elliptical_distance_meshgrid(self, a, b, phi, ci, cj, ix, jx):
         return (((np.cos(phi) * (ix - ci) + np.sin(phi) * (jx - cj)) ** 2 / a ** 2) +
-                ((np.sin(phi) * (ix - ci) - np.cos(phi) * (jx - cj)) ** 2 / b ** 2))
+                ((-np.sin(phi) * (ix - ci) + np.cos(phi) * (jx - cj)) ** 2 / b ** 2))
