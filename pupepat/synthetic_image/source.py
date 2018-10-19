@@ -32,16 +32,16 @@ class Source(abc.ABC):
         pass
 
 
-class PointSource(Source):
+class FlatSource(Source):
     def __init__(self, radius, counts, x=None, y=None):
         self.radius = radius
         self.counts = counts
         super().__init__(x=x, y=y)
 
-        self.half_width = radius  # same as radius (for PointSource)
+        self.half_width = radius  # same as radius (for FlatSource)
 
     def __str__(self):
-        return 'PointSource(radius={radius:0.2f}, counts={counts:0g}, ' \
+        return 'FlatSource(radius={radius:0.2f}, counts={counts:0g}, ' \
                'x={x:}, y={y:})'.format(radius=self.radius, counts=self.counts,
                                         x=self.x, y=self.y)
 
@@ -141,21 +141,21 @@ class EllipticalPupil(Source):
         _decal = np.zeros(shape, dtype=np.float_)
 
         center_i, center_j = self.half_width, self.half_width  # center of decal
-        ix, jx = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]))
+        X, Y = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]))
 
         # calculate dist of all points (ix, jx) to the decal center (ci, cj)
         dist = self.elliptical_distance_meshgrid(self.outer_a, self.outer_b, self.outer_phi,
-                                                 center_i, center_j, ix, jx)
+                                                 center_i, center_j, X, Y)
         _decal[np.where(dist < 1.)] = self.counts  # fill the circle with counts
 
         # remake center and dist array for offset inner_a, -b
         center_i -= self.center_vector[0]
         center_j -= self.center_vector[1]
         dist = self.elliptical_distance_meshgrid(self.inner_a, self.inner_b, self.inner_phi,
-                                                 center_i, center_j, ix, jx)
+                                                 center_i, center_j, X, Y)
         _decal[np.where(dist < 1.)] = 0  # clear the counts with inner_a, _b
         return _decal
 
-    def elliptical_distance_meshgrid(self, a, b, phi, ci, cj, ix, jx):
-        return (((np.cos(phi) * (ix - ci) + np.sin(phi) * (jx - cj)) ** 2 / a ** 2) +
-                ((-np.sin(phi) * (ix - ci) + np.cos(phi) * (jx - cj)) ** 2 / b ** 2))
+    def elliptical_distance_meshgrid(self, a, b, phi, center_x, center_y, X, Y):
+        return (((np.cos(phi) * (X - center_x) + np.sin(phi) * (Y - center_y)) ** 2 / a ** 2) +
+                ((-np.sin(phi) * (X - center_x) + np.cos(phi) * (Y - center_y)) ** 2 / b ** 2))

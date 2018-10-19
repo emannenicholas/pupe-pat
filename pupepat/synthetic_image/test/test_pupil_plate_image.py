@@ -5,7 +5,7 @@ from unittest import skip
 from pupepat.synthetic_image.test.test_synthetic_image import SyntheticImageTestCase
 
 from pupepat.synthetic_image.pupil_plate_image import PupilPlateImage
-from pupepat.synthetic_image.source import Source, PointSource, CircularPupil
+from pupepat.synthetic_image.source import Source, FlatSource, CircularPupil
 
 
 class TestPupilPlateImage(SyntheticImageTestCase):
@@ -17,7 +17,7 @@ class TestPupilPlateImage(SyntheticImageTestCase):
 
     def test_add_source(self):
         ppi = PupilPlateImage((0, 0))
-        ppi.add_source(PointSource(0, 0), 0, 0)
+        ppi.add_source(FlatSource(0, 0), 0, 0)
         self.assertEqual(len(ppi.sources), 1)
 
     def test_add_circular_pupil(self):
@@ -51,7 +51,7 @@ class TestPupilPlateImage(SyntheticImageTestCase):
         ppi.read_noise = 0
 
         radius, counts = 10, 1000
-        ps = PointSource(radius, counts)
+        ps = FlatSource(radius, counts)
         image = ppi.render()
 
         # add the pupil to the center of the plate
@@ -77,7 +77,7 @@ class TestPupilPlateImage(SyntheticImageTestCase):
         ppi.read_noise = 0
 
         radius, counts = 1, 99  # radius 0 gives single pixel decal
-        ps = PointSource(radius, counts)
+        ps = FlatSource(radius, counts)
 
         # add the single pixel point source to the plate
         cx = 2
