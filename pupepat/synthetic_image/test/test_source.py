@@ -1,7 +1,7 @@
 
 import numpy as np
 from pupepat.synthetic_image.test.test_synthetic_image import SyntheticImageTestCase, getsize
-from pupepat.synthetic_image.source import Source, PointSource, CircularPupil, EllipticalPupil
+from pupepat.synthetic_image.source import Source, FlatSource, CircularPupil, EllipticalPupil
 
 
 class TestSource(SyntheticImageTestCase):
@@ -10,25 +10,25 @@ class TestSource(SyntheticImageTestCase):
         self.assertRaises(TypeError, Source, 0, 0)
 
 
-class TestPointSource(SyntheticImageTestCase):
+class TestFlatSource(SyntheticImageTestCase):
     def test___init__(self):
         x, y, radius, counts = 0, 0, 10, 100
-        ps = PointSource(x, y, radius, counts)
+        ps = FlatSource(x, y, radius, counts)
 
-        self.assertIsInstance(ps, PointSource)
+        self.assertIsInstance(ps, FlatSource)
         print(ps)
 
     def test_position(self):
         x, y, radius, counts = 0, 0, 10, 100
-        ps0 = PointSource(radius, counts, x, y)
+        ps0 = FlatSource(radius, counts, x, y)
         self.assertEqual((x, y), ps0.position)
 
-        ps1 = PointSource(radius, counts)
+        ps1 = FlatSource(radius, counts)
         self.assertEqual((None, None), ps1.position)
 
     def test_decal_shape(self):
         radius, counts = 10, 100
-        ps = PointSource(radius, counts)
+        ps = FlatSource(radius, counts)
         expected_shape = (2*radius+1, 2*radius+1)
         self.assertEqual(expected_shape, ps.decal.shape)
         # also test source.half_with is correct
@@ -36,16 +36,16 @@ class TestPointSource(SyntheticImageTestCase):
 
     def test_decal_sum(self):
         radius, counts = 1, 100
-        ps = PointSource(radius, counts)
+        ps = FlatSource(radius, counts)
         self.assertEqual(counts, ps.decal.sum())
 
         radius = 2
-        ps = PointSource(radius, counts)
+        ps = FlatSource(radius, counts)
         self.assertEqual(9 * counts, ps.decal.sum())
 
     def test_memory_size_is_constant(self):
-        ps100 = PointSource(100, 11)
-        ps1000 = PointSource(1000, 33)
+        ps100 = FlatSource(100, 11)
+        ps1000 = FlatSource(1000, 33)
         # size of decal should not change size of object
         self.assertEqual(getsize(ps100), getsize(ps1000))
 
