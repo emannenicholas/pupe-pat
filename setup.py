@@ -11,14 +11,13 @@ License
 
 February 2018
 """
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='pupepat',
       author=['Curtis McCully', 'Brook Taylor'],
       author_email=['cmccully@lco.global', ''],
       version='0.2.4',
-      packages=['pupepat'],
-      package_dir={'pupepat': 'pupepat'},
+      packages=find_packages(),
       setup_requires=['pytest-runner'],
       install_requires=['numpy', 'astropy', 'lcogt_logging', 'sep', 'matplotlib', 'watchdog', 'scipy', 'corner',
                         'emcee', 'pypdf2'],
