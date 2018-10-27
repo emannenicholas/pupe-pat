@@ -17,10 +17,11 @@ from pupepat.ellipse import inside_ellipse
 from pupepat.utils import make_cutout, cutout_coordinates, run_sep, config
 from pupepat.utils import get_bias_corrected_data_in_electrons, source_is_valid
 from pupepat.plot import plot_best_fit_ellipse
-from astropy.modeling import fitting
+from types import SimpleNamespace
 import os
 import emcee
 import corner
+from scipy.optimize import minimize
 
 import logging
 
@@ -143,19 +144,28 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
                                        b_outer=outer_radius_guess,
                                        background=np.median(data))
 
-    if not fit_gradient:
-        initial_model.x_slope.fixed = True
-        initial_model.y_slope.fixed = True
-
-    if fit_circle:
-        initial_model.theta_inner.fixed = True
-        initial_model.theta_outer.fixed = True
-        initial_model.b_inner.tied = lambda x: x.a_inner
-        initial_model.b_outer.tied = lambda x: x.a_outer
-
     x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
-    fitter = fitting.SimplexLSQFitter()
-    best_fit_model = fitter(initial_model, x, y, cutout, weights=1.0 / np.abs(cutout), maxiter=20000, acc=1e-6)
+    error = np.sqrt(np.abs(cutout))
+    if fit_circle:
+        best_fit_parameter_names = ['x0_inner', 'y0_inner', 'r_inner', 'amplitude_inner',
+                                    'x0_outer', 'y0_outer', 'r_outer', 'amplitude_outer', 'background']
+        best_fit_solution = minimize(ln_likelihood_circle,
+                                     [x0, y0, inner_radius_guess, inner_brightness_guess,
+                                      x0, y0, outer_radius_guess, brightness_guess, np.median(data)],
+                                     method='Nelder-Mead', args=(x, y, error), options={'maxiter': 20000})
+    else:
+        best_fit_parameter_names = ['x0_inner', 'y0_inner', 'a_inner', 'b_inner', 'theta_inner', 'amplitude_inner',
+                                    'x0_outer', 'y0_outer', 'a_outer', 'b_outer', 'theta_outer', 'amplitude_outer',
+                                    'x_slope', 'y_slope', 'background']
+        best_fit_solution = minimize(ln_likelihood_ellipse,
+                                     [x0, y0, inner_radius_guess, inner_radius_guess, inner_brightness_guess,
+                                      x0, y0, outer_radius_guess, outer_radius_guess, brightness_guess, 0.0, 0.0],
+                                     method='Nelder-Mead', args=(x, y, error), options={'maxiter': 20000})
+
+    best_fit_parameters = {best_fit_parameter_name: best_fit_parameter
+                           for best_fit_parameter_name, best_fit_parameter in zip(best_fit_parameter_names,
+                                                                                  best_fit_solution['x'])}
+    best_fit_model = SimpleNamespace(**best_fit_parameters)
     plot_best_fit_ellipse(plot_filename + '_{id}.pdf'.format(id=id), cutout, best_fit_model, header)
 
     logging_tags = {parameter: getattr(best_fit_model, parameter).value for parameter in best_fit_model.param_names}

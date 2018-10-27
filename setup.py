@@ -20,7 +20,7 @@ setup(name='pupepat',
       packages=find_packages(),
       setup_requires=['pytest-runner'],
       install_requires=['numpy', 'astropy', 'lcogt_logging', 'sep', 'matplotlib', 'watchdog', 'scipy', 'corner',
-                        'emcee', 'pypdf2'],
+                        'emcee', 'pypdf2', 'astroscrappy'],
       tests_require=['pytest'],
       entry_points={'console_scripts': ['run_pupepat_listener=pupepat.main:run_watcher',
                                         'run_pupepat=pupepat.main:analyze_directory']})
