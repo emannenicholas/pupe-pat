@@ -149,7 +149,7 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     if fit_circle:
         best_fit_parameter_names = ['x0_inner', 'y0_inner', 'r_inner', 'amplitude_inner',
                                     'x0_outer', 'y0_outer', 'r_outer', 'amplitude_outer', 'background']
-        best_fit_solution = minimize(ln_likelihood_circle,
+        best_fit_solution = minimize(lambda *args: -ln_likelihood_circle(*args),
                                      [x0, y0, inner_radius_guess, inner_brightness_guess,
                                       x0, y0, outer_radius_guess, brightness_guess, np.median(data)],
                                      method='Nelder-Mead', args=(x, y, error), options={'maxiter': 20000})
@@ -157,7 +157,7 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
         best_fit_parameter_names = ['x0_inner', 'y0_inner', 'a_inner', 'b_inner', 'theta_inner', 'amplitude_inner',
                                     'x0_outer', 'y0_outer', 'a_outer', 'b_outer', 'theta_outer', 'amplitude_outer',
                                     'x_slope', 'y_slope', 'background']
-        best_fit_solution = minimize(ln_likelihood_ellipse,
+        best_fit_solution = minimize(lambda *args: -ln_likelihood_ellipse(*args),
                                      [x0, y0, inner_radius_guess, inner_radius_guess, inner_brightness_guess,
                                       x0, y0, outer_radius_guess, outer_radius_guess, brightness_guess, 0.0, 0.0],
                                      method='Nelder-Mead', args=(x, y, error), options={'maxiter': 20000})
@@ -166,9 +166,20 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
                            for best_fit_parameter_name, best_fit_parameter in zip(best_fit_parameter_names,
                                                                                   best_fit_solution['x'])}
     best_fit_model = SimpleNamespace(**best_fit_parameters)
+    best_fit_model.param_names = best_fit_parameter_names
+    if fit_circle:
+        best_fit_model.a_inner = best_fit_model.r_inner
+        best_fit_model.b_inner = best_fit_model.r_inner
+        best_fit_model.a_outer = best_fit_model.r_outer
+        best_fit_model.b_outer = best_fit_model.r_outer
+        best_fit_model.theta_inner = 0.0
+        best_fit_model.theta_outer = 0.0
+        best_fit_model.x_slope = 0.0
+        best_fit_model.y_slope = 0.0
+
     plot_best_fit_ellipse(plot_filename + '_{id}.pdf'.format(id=id), cutout, best_fit_model, header)
 
-    logging_tags = {parameter: getattr(best_fit_model, parameter).value for parameter in best_fit_model.param_names}
+    logging_tags = {parameter: getattr(best_fit_model, parameter) for parameter in best_fit_model.param_names}
     logging_tags['filename'] = image_filename
     for keyword in ['xmin', 'xmax', 'ymin', 'ymax']:
         logging_tags[keyword] = float(source[keyword])
@@ -176,7 +187,7 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     logger.debug('Best fit parameters for PUPE-PAT model',
                  extra={'tags': logging_tags})
 
-    fit_results = {param: getattr(best_fit_model, param).value for param in best_fit_model.param_names}
+    fit_results = {param: getattr(best_fit_model, param) for param in best_fit_model.param_names}
     fit_results['x0_centroid'], fit_results['y0_centroid'] = x0, y0
     fit_results['sourceid'] = id
     return fit_results
