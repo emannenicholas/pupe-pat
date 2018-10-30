@@ -10,7 +10,7 @@ License
 February 2018
 """
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 
 import logging.config
 from lcogt_logging import LCOGTFormatter
@@ -137,7 +137,7 @@ def analyze_directory():
     output_table = None
     for image_filename, best_fit_model in zip(images_to_analyze, best_fit_models):
         if len(best_fit_model) > 0:
-            output_table = save_results(image_filename, best_fit_models, output_table,
+            output_table = save_results(image_filename, best_fit_model, output_table,
                                         os.path.join(args.output_dir, args.output_table))
     merge_pdfs(args.output_dir, args.output_table)
     make_quiver_plot(args.output_dir, args.output_table, output_plot=args.output_plot)

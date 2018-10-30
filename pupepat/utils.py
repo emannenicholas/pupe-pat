@@ -48,6 +48,7 @@ config = {
     },
 }
 
+
 def update_config_from_user_yaml(dest, source):
     """Return the config dictionary with values updated from the user supplied yaml file.
 
@@ -121,7 +122,7 @@ def save_results(input_filename: str, best_fit_models: list,
     hdu = fits.open(input_filename)
 
     if output_table is None:
-        param_names = [param for param in vars(best_fit_models[0]).keys()]
+        param_names = [param for param in best_fit_models[0].keys()]
         output_table = {param: [getattr(best_fit_model, param) for best_fit_model in best_fit_models]
                         for param in param_names}
         output_table['filename'] = [os.path.basename(input_filename)] * len(best_fit_models)
@@ -134,7 +135,7 @@ def save_results(input_filename: str, best_fit_models: list,
             for keyword in header_keywords:
                 best_fit_model.keyword = hdu[0].header[keyword]
             logger.debug(best_fit_model)
-            output_table.add_row(vars(best_fit_model))
+            output_table.add_row(best_fit_model)
 
     output_table.write(output_filename, format='ascii', overwrite=True)
     return output_table
