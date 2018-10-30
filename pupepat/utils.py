@@ -236,10 +236,12 @@ def merge_pdfs(output_directory, output_table, output_pdf='pupe-pat'):
         return
     data = ascii.read(table_path)
     data.sort(['FOCDMD', 'filename'])
-    pdf_files = np.array([os.path.join(output_directory,
-                                       '{basename}_{sourceid}.pdf'.format(basename=os.path.splitext(row['filename'])[0],
-                                                                          sourceid=row['sourceid']))
-                          for row in data])
+
+    pdf_files = [os.path.join(output_directory,
+                              '{basename}_{sourceid}.pdf'.format(basename=row['filename'].replace('.fz', '').replace('.fits', ''),
+                                                                 sourceid=row['sourceid']))
+                          for row in data]
+    pdf_files = np.array(pdf_files)
     for demanded_focus in np.unique(data['FOCDMD']):
         focus_set_indexes = data['FOCDMD'] == demanded_focus
 
