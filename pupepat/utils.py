@@ -123,7 +123,7 @@ def save_results(input_filename: str, best_fit_models: list,
 
     if output_table is None:
         param_names = [param for param in best_fit_models[0].keys()]
-        output_table = {param: [getattr(best_fit_model, param) for best_fit_model in best_fit_models]
+        output_table = {param: [best_fit_model[param] for best_fit_model in best_fit_models]
                         for param in param_names}
         output_table['filename'] = [os.path.basename(input_filename)] * len(best_fit_models)
         for keyword in header_keywords:
@@ -133,7 +133,7 @@ def save_results(input_filename: str, best_fit_models: list,
         for i, best_fit_model in enumerate(best_fit_models):
             best_fit_model['filename'] = os.path.basename(input_filename)
             for keyword in header_keywords:
-                best_fit_model.keyword = hdu[0].header[keyword]
+                best_fit_model[keyword] = hdu[0].header[keyword]
             logger.debug(best_fit_model)
             output_table.add_row(best_fit_model)
 
