@@ -119,7 +119,7 @@ def save_results(input_filename: str, best_fit_models: list,
     :return: output_table
     """
     header_keywords = ['M2ROLL', 'MOLTYPE', 'EXPTIME', 'FOCDMD', 'M2PITCH']
-    hdu = fits.open(input_filename)
+    _, header = fits.getdata(input_filename, header=True)
 
     if output_table is None:
         param_names = [param for param in best_fit_models[0].keys()]
@@ -127,13 +127,13 @@ def save_results(input_filename: str, best_fit_models: list,
                         for param in param_names}
         output_table['filename'] = [os.path.basename(input_filename)] * len(best_fit_models)
         for keyword in header_keywords:
-            output_table[keyword] = [hdu[0].header[keyword]] * len(best_fit_models)
+            output_table[keyword] = [header[keyword]] * len(best_fit_models)
         output_table = Table(output_table)
     else:
         for i, best_fit_model in enumerate(best_fit_models):
             best_fit_model['filename'] = os.path.basename(input_filename)
             for keyword in header_keywords:
-                best_fit_model[keyword] = hdu[0].header[keyword]
+                best_fit_model[keyword] = header[keyword]
             logger.debug(best_fit_model)
             output_table.add_row(best_fit_model)
 
