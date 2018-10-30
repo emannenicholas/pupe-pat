@@ -9,7 +9,6 @@ License
 
 February 2018
 """
-from astropy.modeling import custom_model
 import numpy as np
 from astropy.io import fits
 import astroscrappy
@@ -28,7 +27,6 @@ import logging
 logger = logging.getLogger('pupepat')
 
 
-@custom_model
 def elliptical_annulus(x, y, x0_inner=0.0, y0_inner=0.0, a_inner=1.0, b_inner=1.0, theta_inner=0.0, amplitude_inner=1.0,
                        x0_outer=0.0, y0_outer=0.0, a_outer=1.0, b_outer=1.0, theta_outer=0.0, amplitude_outer=1.0,
                        x_slope=0.0, y_slope=0.0, background=0.0):
@@ -90,8 +88,7 @@ def cutout_has_multiple_sources(data, cutout, header, background):
     cutout_sources = run_sep(cutout, header, background_mask_threshold=25.0 * np.sqrt(background) + background)
 
     if len(cutout_sources) > 1:
-        logger.error('Too many sources detected in cutout. Likely source crowding.',
-                     extra={'tags': {'filename': image_filename, 'x': source['x'], 'y': source['y']}})
+        logger.error('Too many sources detected in cutout. Likely source crowding.')
 
     return len(cutout_sources) > 1
 
@@ -136,31 +133,28 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     brightness_guess = np.median(cutout[np.logical_and(r < outer_radius_guess, r > inner_radius_guess)])
     inner_brightness_guess = np.median(cutout[r < inner_radius_guess])
 
-    initial_model = elliptical_annulus(x0_inner=x0, y0_inner=y0,
-                                       x0_outer=x0, y0_outer=y0,
-                                       amplitude_inner=inner_brightness_guess, amplitude_outer=brightness_guess,
-                                       a_inner=inner_radius_guess, b_inner=inner_radius_guess,
-                                       a_outer=outer_radius_guess,
-                                       b_outer=outer_radius_guess,
-                                       background=np.median(data))
-
     x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
     error = np.sqrt(np.abs(cutout))
     if fit_circle:
         best_fit_parameter_names = ['x0_inner', 'y0_inner', 'r_inner', 'amplitude_inner',
-                                    'x0_outer', 'y0_outer', 'r_outer', 'amplitude_outer', 'background']
+                                    'x0_outer', 'y0_outer', 'r_outer', 'amplitude_outer', 'background', 'ln_f']
         best_fit_solution = minimize(lambda *args: -ln_likelihood_circle(*args),
                                      [x0, y0, inner_radius_guess, inner_brightness_guess,
-                                      x0, y0, outer_radius_guess, brightness_guess, np.median(data)],
-                                     method='Nelder-Mead', args=(x, y, error), options={'maxiter': 20000})
+                                      x0, y0, outer_radius_guess, brightness_guess, np.median(data), np.log(0.25)],
+                                     method='Nelder-Mead', args=(x, y, cutout, error),
+                                     options={'maxiter': 20000, 'adaptive': True, 'xatol': 1e-3, 'fatol': 1.0})
     else:
         best_fit_parameter_names = ['x0_inner', 'y0_inner', 'a_inner', 'b_inner', 'theta_inner', 'amplitude_inner',
                                     'x0_outer', 'y0_outer', 'a_outer', 'b_outer', 'theta_outer', 'amplitude_outer',
-                                    'x_slope', 'y_slope', 'background']
+                                    'x_slope', 'y_slope', 'background', 'ln_f']
         best_fit_solution = minimize(lambda *args: -ln_likelihood_ellipse(*args),
                                      [x0, y0, inner_radius_guess, inner_radius_guess, inner_brightness_guess,
-                                      x0, y0, outer_radius_guess, outer_radius_guess, brightness_guess, 0.0, 0.0],
-                                     method='Nelder-Mead', args=(x, y, error), options={'maxiter': 20000})
+                                      x0, y0, outer_radius_guess, outer_radius_guess, brightness_guess, 0.0, 0.0,
+                                      np.log(0.25)],
+                                     method='Nelder-Mead', args=(x, y, cutout, error),
+                                     options={'maxiter': 20000, 'adaptive': True, 'xatol': 1e-3, 'fatol': 1.0})
+
+    logger.debug(best_fit_solution)
 
     best_fit_parameters = {best_fit_parameter_name: best_fit_parameter
                            for best_fit_parameter_name, best_fit_parameter in zip(best_fit_parameter_names,
@@ -193,44 +187,44 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     return fit_results
 
 
-def ln_likelihood_ellipse(theta, x, y, yerr):
+def ln_likelihood_ellipse(theta, x, y, data, data_error):
     x0_inner, y0_inner, a_inner, b_inner, theta_inner, amplitude_inner, \
     x0_outer, y0_outer, a_outer, b_outer, theta_outer, amplitude_outer, \
-    x_slope, y_slope, background = theta
-    model = elliptical_annulus(x0_inner=x0_inner, y0_inner=y0_inner, a_inner=a_inner, b_inner=b_inner,
+    x_slope, y_slope, background, ln_f = theta
+    model = elliptical_annulus(x, y, x0_inner=x0_inner, y0_inner=y0_inner, a_inner=a_inner, b_inner=b_inner,
                                theta_inner=theta_inner,
                                amplitude_inner=amplitude_inner, x0_outer=x0_outer, y0_outer=y0_outer, a_outer=a_outer,
                                b_outer=b_outer, theta_outer=theta_outer, amplitude_outer=amplitude_outer,
                                x_slope=x_slope,
                                y_slope=y_slope, background=background)
-    inv_sigma2 = yerr ** -2.0
-    return -0.5 * (np.sum((y - model(x[0], x[1])) ** 2 * inv_sigma2 - np.log(inv_sigma2)))
+    inv_sigma2 = 1.0 / (data_error ** 2.0 + model ** 2.0  * np.exp(2.0 * ln_f))
+    return -0.5 * (np.sum((data - model) ** 2 * inv_sigma2 - np.log(inv_sigma2)))
 
 
-def run_mcmc(x, y, yerr, theta0, likelihood_function, labels, output_plot='pupe-pat-mcmc.pdf', nwalkers=50):
+def run_mcmc(x, y, data_error, theta0, data, likelihood_function, labels, output_plot='pupe-pat-mcmc.pdf', nwalkers=50):
     n_dim = len(theta0)
     starting_positions = [np.array(theta0) * (1.0 + np.random.uniform(-0.1, 0.1, len(theta0))) for i in range(nwalkers)]
-    sampler = emcee.EnsembleSampler(nwalkers, n_dim, likelihood_function, args=(x, y, yerr), threads=4)
+    sampler = emcee.EnsembleSampler(nwalkers, n_dim, likelihood_function, args=(x, y, data, data_error), threads=4)
     sampler.run_mcmc(starting_positions, 1000)
     samples = sampler.chain[:, 200:, :].reshape((-1, n_dim))
     fig = corner.corner(samples, labels=labels)
     fig.savefig(output_plot)
 
 
-def ln_likelihood_circle(theta, x, y, yerr):
+def ln_likelihood_circle(theta, x, y, data, data_error):
     x0_inner, y0_inner, r_inner, amplitude_inner, \
-    x0_outer, y0_outer, r_outer, amplitude_outer, background = theta
-    model = elliptical_annulus(x0_inner=x0_inner, y0_inner=y0_inner, a_inner=r_inner, b_inner=r_inner, theta_inner=0.0,
-                               amplitude_inner=amplitude_inner, x0_outer=x0_outer, y0_outer=y0_outer, a_outer=r_outer,
-                               b_outer=r_outer, theta_outer=0.0, amplitude_outer=amplitude_outer, x_slope=0.0,
-                               y_slope=0.0, background=background)
-    inv_sigma2 = yerr ** -2.0
-    return -0.5 * (np.sum((y - model(x[0], x[1])) ** 2 * inv_sigma2 - np.log(inv_sigma2)))
+    x0_outer, y0_outer, r_outer, amplitude_outer, background, ln_f = theta
+    model = elliptical_annulus(x, y, x0_inner=x0_inner, y0_inner=y0_inner, a_inner=r_inner, b_inner=r_inner,
+                               theta_inner=0.0, amplitude_inner=amplitude_inner, x0_outer=x0_outer,
+                               y0_outer=y0_outer, a_outer=r_outer, b_outer=r_outer, theta_outer=0.0,
+                               amplitude_outer=amplitude_outer, x_slope=0.0, y_slope=0.0, background=background)
+    inv_sigma2 = 1.0 / (data_error ** 2.0 + model ** 2.0  * np.exp(2.0 * ln_f))
+    return -0.5 * (np.sum((data - model) ** 2 * inv_sigma2 - np.log(inv_sigma2)))
 
 
 ellipse_labels = ['x0_inner', 'y0_inner', 'a_inner', 'b_inner', 'theta_inner', 'amplitude_inner',
                   'x0_outer', 'y0_outer', 'a_outer', 'b_outer', 'theta_outer', 'amplitude_outer', 'x_slope', 'y_slope',
-                  'background']
+                  'background', 'ln_f']
 
 circle_labels = ['x0_inner', 'y0_inner', 'r_inner', 'amplitude_inner', 'x0_outer', 'y0_outer', 'r_outer',
-                 'amplitude_outer', 'background']
+                 'amplitude_outer', 'background', 'ln_f']

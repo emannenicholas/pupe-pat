@@ -10,12 +10,13 @@ License
 February 2018
 """
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('TkAgg')
 
 import logging.config
 from lcogt_logging import LCOGTFormatter
 import traceback
 import sys
+import multiprocessing
 
 logging.captureWarnings(True)
 
@@ -59,6 +60,7 @@ def parse_args():
                         help='Proposal ID used to take the pupil plate images')
     parser.add_argument('--config-file', dest='config_filename', default=None,
                         help='Filename of configuration YAML. See config.yaml.example, for example.')
+    parser.add_argument('--ncpu', dest='ncpu', default=3, help='Number of cores to use.')
 
     # verbose and quiet are mutually exclusive
     logging_group = parser.add_mutually_exclusive_group()
@@ -128,15 +130,21 @@ def analyze_directory():
         logger.error('No images to analyze in directory: {d}'.format(d=args.input_dir))
         sys.exit(1)
 
+    p = multiprocessing.Pool(args.ncpu)
+    best_fit_models = p.map(analyze_image, [(image_filename, args.output_dir) for image_filename in images_to_analyze])
+    p.close()
+    p.join()
     output_table = None
-    for image_filename in images_to_analyze:
-        output_table = analyze_image(image_filename, output_table, os.path.join(args.output_dir, args.output_table),
-                                     args.output_dir)
+    for image_filename, best_fit_model in zip(images_to_analyze, best_fit_models):
+        if len(best_fit_model) > 0:
+            output_table = save_results(image_filename, best_fit_models, output_table,
+                                        os.path.join(args.output_dir, args.output_table))
     merge_pdfs(args.output_dir, args.output_table)
     make_quiver_plot(args.output_dir, args.output_table, output_plot=args.output_plot)
 
 
-def analyze_image(filename, output_table, output_filename, output_directory):
+def analyze_image(args):
+    filename, output_directory = args
     try:
         # Run the analysis on the new frame
         logger.info('Fitting pupil model', extra={'tags': {'filename': os.path.basename(filename)}})
@@ -153,15 +161,14 @@ def analyze_image(filename, output_table, output_filename, output_directory):
 
             best_fit_models = fit_defocused_image(filename, plot_basename)
             best_fit_models = [best_fit_model for best_fit_model in best_fit_models if best_fit_model is not None]
-            if len(best_fit_models) > 0:
-                output_table = save_results(filename, best_fit_models, output_table, output_filename)
     except Exception as e:
         exc_type, exc_value, exc_tb = sys.exc_info()
         tb_msg = traceback.format_exception(exc_type, exc_value, exc_tb)
 
         logger.error('Error processing: {tb_msg}'.format(tb_msg=tb_msg),
                      extra={'tags': {'filename': os.path.basename(os.path.basename(filename)), 'error': str(e)}})
-    return output_table
+        best_fit_models = []
+    return best_fit_models
 
 
 class Handler(FileSystemEventHandler):
@@ -174,5 +181,7 @@ class Handler(FileSystemEventHandler):
 
     def on_created(self, event):
         if should_process_image(event.src_path, self.proposal_id):
-            self.output_table = analyze_image(event.src_path, self.output_table,
-                                              self.output_filename, self.output_directory)
+            best_fit_models = analyze_image((event.src_path, self.output_directory))
+            if len(best_fit_models) > 0:
+                self.output_table = save_results(event.src_path, best_fit_models, self.output_table,
+                                                 self.output_directory)
