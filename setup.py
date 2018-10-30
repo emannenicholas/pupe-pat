@@ -16,7 +16,7 @@ from setuptools import setup, find_packages
 setup(name='pupepat',
       author=['Curtis McCully', 'Brook Taylor'],
       author_email=['cmccully@lco.global', ''],
-      version='0.2.4',
+      version='0.3.0',
       packages=find_packages(),
       setup_requires=['pytest-runner'],
       install_requires=['numpy', 'astropy', 'lcogt_logging', 'sep', 'matplotlib', 'watchdog', 'scipy', 'corner',
