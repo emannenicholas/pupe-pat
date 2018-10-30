@@ -60,7 +60,7 @@ def parse_args():
                         help='Proposal ID used to take the pupil plate images')
     parser.add_argument('--config-file', dest='config_filename', default=None,
                         help='Filename of configuration YAML. See config.yaml.example, for example.')
-    parser.add_argument('--ncpu', dest='ncpu', default=3, help='Number of cores to use.')
+    parser.add_argument('--ncpu', dest='ncpu', type=int, default=3, help='Number of cores to use.')
 
     # verbose and quiet are mutually exclusive
     logging_group = parser.add_mutually_exclusive_group()
