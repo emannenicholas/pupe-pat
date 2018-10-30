@@ -137,22 +137,21 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     error = np.sqrt(np.abs(cutout))
     if fit_circle:
         best_fit_parameter_names = ['x0_inner', 'y0_inner', 'r_inner', 'amplitude_inner',
-                                    'x0_outer', 'y0_outer', 'r_outer', 'amplitude_outer', 'background', 'ln_f']
+                                    'x0_outer', 'y0_outer', 'r_outer', 'amplitude_outer', 'background']
         best_fit_solution = minimize(lambda *args: -ln_likelihood_circle(*args),
                                      [x0, y0, inner_radius_guess, inner_brightness_guess,
-                                      x0, y0, outer_radius_guess, brightness_guess, np.median(data), np.log(0.25)],
+                                      x0, y0, outer_radius_guess, brightness_guess, np.median(data)],
                                      method='Nelder-Mead', args=(x, y, cutout, error),
-                                     options={'maxiter': 20000, 'adaptive': True, 'xatol': 1e-3, 'fatol': 1.0})
+                                     options={'maxiter': 20000, 'adaptive': True})
     else:
         best_fit_parameter_names = ['x0_inner', 'y0_inner', 'a_inner', 'b_inner', 'theta_inner', 'amplitude_inner',
                                     'x0_outer', 'y0_outer', 'a_outer', 'b_outer', 'theta_outer', 'amplitude_outer',
-                                    'x_slope', 'y_slope', 'background', 'ln_f']
+                                    'x_slope', 'y_slope', 'background']
         best_fit_solution = minimize(lambda *args: -ln_likelihood_ellipse(*args),
                                      [x0, y0, inner_radius_guess, inner_radius_guess, inner_brightness_guess,
-                                      x0, y0, outer_radius_guess, outer_radius_guess, brightness_guess, 0.0, 0.0,
-                                      np.log(0.25)],
+                                      x0, y0, outer_radius_guess, outer_radius_guess, brightness_guess, 0.0, 0.0],
                                      method='Nelder-Mead', args=(x, y, cutout, error),
-                                     options={'maxiter': 20000, 'adaptive': True, 'xatol': 1e-3, 'fatol': 1.0})
+                                     options={'maxiter': 20000, 'adaptive': True})
 
     logger.debug(best_fit_solution)
 
@@ -190,14 +189,14 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
 def ln_likelihood_ellipse(theta, x, y, data, data_error):
     x0_inner, y0_inner, a_inner, b_inner, theta_inner, amplitude_inner, \
     x0_outer, y0_outer, a_outer, b_outer, theta_outer, amplitude_outer, \
-    x_slope, y_slope, background, ln_f = theta
+    x_slope, y_slope, background = theta
     model = elliptical_annulus(x, y, x0_inner=x0_inner, y0_inner=y0_inner, a_inner=a_inner, b_inner=b_inner,
                                theta_inner=theta_inner,
                                amplitude_inner=amplitude_inner, x0_outer=x0_outer, y0_outer=y0_outer, a_outer=a_outer,
                                b_outer=b_outer, theta_outer=theta_outer, amplitude_outer=amplitude_outer,
                                x_slope=x_slope,
                                y_slope=y_slope, background=background)
-    inv_sigma2 = 1.0 / (data_error ** 2.0 + model ** 2.0  * np.exp(2.0 * ln_f))
+    inv_sigma2 = 1.0 / (data_error ** 2.0)
     return -0.5 * (np.sum((data - model) ** 2 * inv_sigma2 - np.log(inv_sigma2)))
 
 
@@ -213,12 +212,12 @@ def run_mcmc(x, y, data_error, theta0, data, likelihood_function, labels, output
 
 def ln_likelihood_circle(theta, x, y, data, data_error):
     x0_inner, y0_inner, r_inner, amplitude_inner, \
-    x0_outer, y0_outer, r_outer, amplitude_outer, background, ln_f = theta
+    x0_outer, y0_outer, r_outer, amplitude_outer, background = theta
     model = elliptical_annulus(x, y, x0_inner=x0_inner, y0_inner=y0_inner, a_inner=r_inner, b_inner=r_inner,
                                theta_inner=0.0, amplitude_inner=amplitude_inner, x0_outer=x0_outer,
                                y0_outer=y0_outer, a_outer=r_outer, b_outer=r_outer, theta_outer=0.0,
                                amplitude_outer=amplitude_outer, x_slope=0.0, y_slope=0.0, background=background)
-    inv_sigma2 = 1.0 / (data_error ** 2.0 + model ** 2.0  * np.exp(2.0 * ln_f))
+    inv_sigma2 = 1.0 / (data_error ** 2.0)
     return -0.5 * (np.sum((data - model) ** 2 * inv_sigma2 - np.log(inv_sigma2)))
 
 
