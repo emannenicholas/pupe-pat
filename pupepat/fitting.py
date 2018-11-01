@@ -138,21 +138,20 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     if fit_circle:
         best_fit_parameter_names = ['x0_inner', 'y0_inner', 'r_inner', 'amplitude_inner',
                                     'x0_outer', 'y0_outer', 'r_outer', 'amplitude_outer', 'background']
-        best_fit_solution = minimize(lambda *args: -ln_likelihood_circle(*args),
-                                     [x0, y0, inner_radius_guess, inner_brightness_guess,
-                                      x0, y0, outer_radius_guess, brightness_guess, np.median(data)],
-                                     method='Nelder-Mead', args=(x, y, cutout, error),
-                                     options={'maxiter': 20000, 'adaptive': True})
+        p0 = [x0, y0, inner_radius_guess, inner_brightness_guess, x0, y0, outer_radius_guess,
+              brightness_guess, background]
+        ln_likelihood_function = ln_likelihood_circle
+
     else:
         best_fit_parameter_names = ['x0_inner', 'y0_inner', 'a_inner', 'b_inner', 'theta_inner', 'amplitude_inner',
                                     'x0_outer', 'y0_outer', 'a_outer', 'b_outer', 'theta_outer', 'amplitude_outer',
                                     'x_slope', 'y_slope', 'background']
-        best_fit_solution = minimize(lambda *args: -ln_likelihood_ellipse(*args),
-                                     [x0, y0, inner_radius_guess, inner_radius_guess, inner_brightness_guess,
-                                      x0, y0, outer_radius_guess, outer_radius_guess, brightness_guess, 0.0, 0.0],
-                                     method='Nelder-Mead', args=(x, y, cutout, error),
-                                     options={'maxiter': 20000, 'adaptive': True})
+        p0 = [x0, y0, inner_radius_guess, inner_radius_guess, inner_brightness_guess, x0, y0,
+              outer_radius_guess, outer_radius_guess, brightness_guess, 0.0, 0.0, background]
+        ln_likelihood_function = ln_likelihood_ellipse
 
+    best_fit_solution = minimize(lambda *args: -ln_likelihood_function(*args), p0, method='Powell',
+                                 args=(x, y, cutout, error), options={'maxiter': 20000})
     logger.debug(best_fit_solution)
 
     best_fit_parameters = {best_fit_parameter_name: best_fit_parameter
