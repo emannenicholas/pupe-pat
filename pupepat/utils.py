@@ -48,6 +48,7 @@ config = {
     },
 }
 
+
 def update_config_from_user_yaml(dest, source):
     """Return the config dictionary with values updated from the user supplied yaml file.
 
@@ -118,7 +119,7 @@ def save_results(input_filename: str, best_fit_models: list,
     :return: output_table
     """
     header_keywords = ['M2ROLL', 'MOLTYPE', 'EXPTIME', 'FOCDMD', 'M2PITCH']
-    hdu = fits.open(input_filename)
+    _, header = fits.getdata(input_filename, header=True)
 
     if output_table is None:
         param_names = [param for param in best_fit_models[0].keys()]
@@ -126,13 +127,13 @@ def save_results(input_filename: str, best_fit_models: list,
                         for param in param_names}
         output_table['filename'] = [os.path.basename(input_filename)] * len(best_fit_models)
         for keyword in header_keywords:
-            output_table[keyword] = [hdu[0].header[keyword]] * len(best_fit_models)
+            output_table[keyword] = [header[keyword]] * len(best_fit_models)
         output_table = Table(output_table)
     else:
         for i, best_fit_model in enumerate(best_fit_models):
             best_fit_model['filename'] = os.path.basename(input_filename)
             for keyword in header_keywords:
-                best_fit_model[keyword] = hdu[0].header[keyword]
+                best_fit_model[keyword] = header[keyword]
             logger.debug(best_fit_model)
             output_table.add_row(best_fit_model)
 
@@ -235,10 +236,12 @@ def merge_pdfs(output_directory, output_table, output_pdf='pupe-pat'):
         return
     data = ascii.read(table_path)
     data.sort(['FOCDMD', 'filename'])
-    pdf_files = np.array([os.path.join(output_directory,
-                                       '{basename}_{sourceid}.pdf'.format(basename=os.path.splitext(row['filename'])[0],
-                                                                          sourceid=row['sourceid']))
-                          for row in data])
+
+    pdf_files = [os.path.join(output_directory,
+                              '{basename}_{sourceid}.pdf'.format(basename=row['filename'].replace('.fz', '').replace('.fits', ''),
+                                                                 sourceid=row['sourceid']))
+                          for row in data]
+    pdf_files = np.array(pdf_files)
     for demanded_focus in np.unique(data['FOCDMD']):
         focus_set_indexes = data['FOCDMD'] == demanded_focus
 

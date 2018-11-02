@@ -16,11 +16,11 @@ from setuptools import setup, find_packages
 setup(name='pupepat',
       author=['Curtis McCully', 'Brook Taylor'],
       author_email=['cmccully@lco.global', ''],
-      version='0.2.4',
+      version='0.3.0',
       packages=find_packages(),
       setup_requires=['pytest-runner'],
       install_requires=['numpy', 'astropy', 'lcogt_logging', 'sep', 'matplotlib', 'watchdog', 'scipy', 'corner',
-                        'emcee', 'pypdf2'],
+                        'emcee', 'pypdf2', 'astroscrappy'],
       tests_require=['pytest'],
       entry_points={'console_scripts': ['run_pupepat_listener=pupepat.main:run_watcher',
                                         'run_pupepat=pupepat.main:analyze_directory']})
