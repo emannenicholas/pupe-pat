@@ -71,7 +71,7 @@ def fit_defocused_image(filename, plot_basename):
 
     # repair any hot pixels and/or cosmic rays (gain=1.0 b/c we're already in units of electrons)
     hpcr_mask, data = astroscrappy.detect_cosmics(data, readnoise=hdu[0].header['RDNOISE'], gain=1.0,
-                                                  sigclip=6.0, sigfrac=0.25, objlim=8.0)
+                                                  sigclip=10.0, sigfrac=0.25, objlim=8.0)
 
     sources = run_sep(data, hdu[0].header)
     logger.info('Found {num_s} sources'.format(num_s=len(sources)),
